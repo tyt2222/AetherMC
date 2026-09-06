@@ -33,12 +33,14 @@ public class MinionManager implements Listener {
     private final NamespacedKey minionKey;
     private final NamespacedKey ownerKey;
     private final Map<UUID, Integer> countByOwner = new HashMap<>();
+    private final int maxEntitiesPerIsland;
 
     public MinionManager(SkyblockPlugin plugin, IslandManager islands, EconomyManager economy, MilestoneManager milestones) {
         this.plugin = plugin;
         this.islands = islands;
         this.economy = economy;
         this.milestones = milestones;
+        this.maxEntitiesPerIsland = Math.max(1, plugin.getConfig().getInt("limits.max-entities-per-island", 200));
         this.minionKey = new NamespacedKey(plugin, "minion_type");
         this.ownerKey = new NamespacedKey(plugin, "minion_owner");
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -92,13 +94,20 @@ public class MinionManager implements Listener {
             Player player = event.getPlayer();
             
             Location spawnLoc = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
-            if (!islands.owns(player, spawnLoc)) {
+            Island island = islands.getForPlayer(player.getUniqueId()).orElse(null);
+            if (island == null || !island.contains(spawnLoc, islands.radius())) {
                 player.sendMessage("§cYou can only place minions on your island.");
                 return;
             }
             
-            if (getCount(player.getUniqueId()) >= milestones.getWorkerLimit(player.getUniqueId())) {
+            if (getCount(island.owner()) >= milestones.getWorkerLimit(island.owner())) {
                 player.sendMessage("§cYou have reached your Minion limit! Check /milestones to upgrade.");
+                return;
+            }
+            long entities = spawnLoc.getWorld().getEntities().stream()
+                .filter(entity -> island.contains(entity.getLocation(), islands.radius())).count();
+            if (entities >= maxEntitiesPerIsland) {
+                player.sendMessage("§cYour island reached its entity limit.");
                 return;
             }
             
@@ -110,7 +119,7 @@ public class MinionManager implements Listener {
             as.setCustomName(type.equals("collector_3x3") ? "§eTier 1 Collector" : "§6Tier 2 Collector");
             as.setCustomNameVisible(true);
             as.getPersistentDataContainer().set(minionKey, PersistentDataType.STRING, type);
-            as.getPersistentDataContainer().set(ownerKey, PersistentDataType.STRING, player.getUniqueId().toString());
+            as.getPersistentDataContainer().set(ownerKey, PersistentDataType.STRING, island.owner().toString());
 
             as.getEquipment().setHelmet(new ItemStack(type.equals("collector_3x3") ? Material.SKELETON_SKULL : Material.ZOMBIE_HEAD));
             as.getEquipment().setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
@@ -118,7 +127,7 @@ public class MinionManager implements Listener {
             as.getEquipment().setBoots(new ItemStack(Material.LEATHER_BOOTS));
             
             hand.setAmount(hand.getAmount() - 1);
-            countByOwner.merge(player.getUniqueId(), 1, Integer::sum);
+            countByOwner.merge(island.owner(), 1, Integer::sum);
             player.playSound(spawnLoc, Sound.ENTITY_ARMOR_STAND_PLACE, 1f, 1f);
         }
     }

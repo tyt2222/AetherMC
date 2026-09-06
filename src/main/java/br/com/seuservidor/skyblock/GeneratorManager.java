@@ -31,6 +31,8 @@ public final class GeneratorManager implements Listener {
     private final File dataFile;
     private final MinionManager minions;
     private final int outputSearchLimit;
+    private final int maxItemsPerIsland;
+    private final int maxEntitiesPerIsland;
 
     public GeneratorManager(SkyblockPlugin plugin, IslandManager islands, MinionManager minions) {
         this.plugin = plugin; this.islands = islands; this.minions = minions;
@@ -39,6 +41,8 @@ public final class GeneratorManager implements Listener {
         this.amountKey = new NamespacedKey(plugin, "money_amount");
         this.dataFile = new File(plugin.getDataFolder(), "generators.yml");
         this.outputSearchLimit = Math.max(1, plugin.getConfig().getInt("generator-output-search-limit", 16));
+        this.maxItemsPerIsland = Math.max(1, plugin.getConfig().getInt("limits.max-item-entities-per-island", 100));
+        this.maxEntitiesPerIsland = Math.max(1, plugin.getConfig().getInt("limits.max-entities-per-island", 200));
         plugin.saveDefaultConfig();
         loadTypes(); load();
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -47,6 +51,18 @@ public final class GeneratorManager implements Listener {
     public int getCount(UUID owner) {
         return countsByOwner.getOrDefault(owner, 0);
     }
+
+    public long getMoneyPerHour(UUID owner) {
+        long total = 0;
+        for (PlacedGenerator generator : placed.values()) {
+            if (!generator.owner().equals(owner)) continue;
+            GeneratorType type = types.get(generator.type());
+            if (type == null || type.intervalSeconds() <= 0) continue;
+            total += (long) ((3600.0 / type.intervalSeconds())
+                * type.noteAmount() * type.noteValue());
+        }
+        return total;
+    }
     
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
@@ -54,8 +70,14 @@ public final class GeneratorManager implements Listener {
         Block block = event.getClickedBlock();
         Player player = event.getPlayer();
         
-        if (placed.containsKey(block.getLocation())) {
+        PlacedGenerator generator = placed.get(block.getLocation());
+        if (generator != null) {
             if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                if (!islands.isMember(player.getUniqueId(), generator.owner())) {
+                    event.setCancelled(true);
+                    player.sendMessage("§cOnly coop members can remove this generator.");
+                    return;
+                }
                 event.setCancelled(true);
                 ItemStack genItem = removeGenerator(block);
                 if (genItem != null) {
@@ -165,16 +187,19 @@ public final class GeneratorManager implements Listener {
     
     public boolean place(Player player, Block block, ItemStack item) {
         String type = itemType(item); if (type == null) return false;
-        if (!islands.owns(player, block.getLocation())) { player.sendActionBar(Component.text("§cOnly place on your island!")); return true; }
+        Island island = islands.getForPlayer(player.getUniqueId()).orElse(null);
+        if (island == null || !island.contains(block.getLocation(), islands.radius())) {
+            player.sendActionBar(Component.text("§cOnly place on your island!")); return true;
+        }
         
-        int maxGens = plugin.getMilestones().getGeneratorLimit(player.getUniqueId());
-        if (getCount(player.getUniqueId()) >= maxGens) {
+        int maxGens = plugin.getMilestones().getGeneratorLimit(island.owner());
+        if (getCount(island.owner()) >= maxGens) {
             player.sendMessage("§cYou reached your generator limit (" + maxGens + ")! Check /milestones to upgrade.");
             return true;
         }
         
-        placed.put(block.getLocation(), new PlacedGenerator(type, player.getUniqueId(), System.currentTimeMillis()));
-        countsByOwner.merge(player.getUniqueId(), 1, Integer::sum);
+        placed.put(block.getLocation(), new PlacedGenerator(type, island.owner(), System.currentTimeMillis()));
+        countsByOwner.merge(island.owner(), 1, Integer::sum);
         save();
         if (plugin.getSessionListener() != null) plugin.getSessionListener().updateScoreboard(player);
         return false;
@@ -199,7 +224,7 @@ public final class GeneratorManager implements Listener {
         Set<UUID> activeIslands = new HashSet<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!islands.isSkyblockWorld(p.getLocation())) continue;
-            islands.get(p.getUniqueId())
+            islands.getForPlayer(p.getUniqueId())
                 .filter(island -> island.contains(p.getLocation(), islands.radius()))
                 .ifPresent(island -> activeIslands.add(island.owner()));
         }
@@ -237,6 +262,15 @@ public final class GeneratorManager implements Listener {
                 continue;
             }
             
+            Island island = islands.get(generator.owner()).orElse(null);
+            if (island == null) continue;
+            long islandItems = output.getWorld().getEntitiesByClass(Item.class).stream()
+                .filter(item -> island.contains(item.getLocation(), islands.radius())).count();
+            long islandEntities = output.getWorld().getEntities().stream()
+                .filter(entity -> island.contains(entity.getLocation(), islands.radius())).count();
+            if (islandItems >= maxItemsPerIsland || islandEntities >= maxEntitiesPerIsland) {
+                continue;
+            }
             Collection<org.bukkit.entity.Entity> nearby = output.getWorld().getNearbyEntities(output.getLocation().add(0.5, 0.2, 0.5), 1.5, 1.5, 1.5, e -> e instanceof Item);
             boolean merged = false;
             for (org.bukkit.entity.Entity e : nearby) {

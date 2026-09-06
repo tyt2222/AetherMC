@@ -73,7 +73,7 @@ public final class ProtectionListener implements Listener {
     }
 
     @EventHandler public void onRespawn(PlayerRespawnEvent event) {
-        islands.get(event.getPlayer().getUniqueId()).ifPresent(island -> {
+        islands.getForPlayer(event.getPlayer().getUniqueId()).ifPresent(island -> {
             event.setRespawnLocation(islands.home(island));
         });
     }
@@ -81,7 +81,7 @@ public final class ProtectionListener implements Listener {
     // Cair no Void na ilha teleporta de volta
     @EventHandler public void onVoid(PlayerMoveEvent event) {
         if (islands.isSkyblockWorld(event.getTo()) && event.getTo().getY() < 0) {
-            islands.get(event.getPlayer().getUniqueId()).ifPresent(island -> event.getPlayer().teleport(islands.home(island)));
+            islands.getForPlayer(event.getPlayer().getUniqueId()).ifPresent(island -> event.getPlayer().teleport(islands.home(island)));
         }
     }
 }

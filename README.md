@@ -13,7 +13,7 @@ Paper **1.21.4** / **Java 21** skyblock plugin with islands, protection, generat
 
 ## Commands
 
-- `/island create|home|info` or `/is create|home|info`: player island.
+- `/island create|home|info|invite|kick|leave|members` or `/is ...`: island and coop management.
 - `/lobby`: teleport to lobby.
 - `/shop`: open generator/block/minion shop.
 - `/market` or `/ah`: open player market.
@@ -70,6 +70,7 @@ Generated at runtime inside `plugins/SkyblockGenerators/` on the server:
 - `shop.minions`: minion prices.
 - `ranks`: rank prefixes and suggested VIP prices.
 - `resource-pack`: mandatory pack URL, SHA-1, prompt.
+- `limits`: per-island item and entity caps.
 
 ## Build/Test
 
@@ -97,10 +98,12 @@ git config user.email "fabio.paiva.dev@gmail.com"
 
 - `/opme` is intentionally kept for the test environment.
 - Global no-damage and no-hunger are intentional for now.
-- `logo.png` is stored in the project root. Vanilla TAB cannot render PNG images without a resource pack/custom font, so TAB uses a styled text header.
+- `logo.png` is stored in the project root and packaged as a custom-font asset used by the player list header.
 - Generated pack: `resource-pack/AetherMC-resource-pack.zip`.
-- The pack maps `logo.png` to font glyph `\uE000`; TAB header uses that glyph.
-- Set `resource-pack.url` to a direct HTTPS download URL before expecting clients to receive it.
+- The pack maps a 128x64 version of `logo.png` to glyph `\uE238` in the custom `aethermc:logo` font; the TAB header renders that font explicitly.
+- `dev_run.ps1` serves the resource pack locally at `http://127.0.0.1:8765/` for local testing; production servers must change `resource-pack.url` to a public direct HTTPS URL.
+- If the ZIP changes, calculate its SHA-1 with `(Get-FileHash .\resource-pack\AetherMC-resource-pack.zip -Algorithm SHA1).Hash.ToLower()` and update `resource-pack.sha1`.
+- The player list logo is rendered by the `\uE000` glyph from `assets/aethermc/font/logo.json`; clients must accept the pack and reconnect/reload it before the glyph appears.
 - Shop prices live in `src/main/resources/config.yml`.
 - Economy uses `long` balances.
 - Economy and milestones save on interval/on shutdown instead of every small event.

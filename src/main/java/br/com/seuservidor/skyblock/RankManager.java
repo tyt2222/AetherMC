@@ -1,6 +1,8 @@
 package br.com.seuservidor.skyblock;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -110,29 +112,38 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private void updateTabList(Player player) {
-        boolean packConfigured = !plugin.getConfig().getString("resource-pack.url", "").isBlank();
-        Component logo = packConfigured
-            ? Component.text("\n\uE000\n").font(Key.key("aethermc:logo"))
-            : Component.text("\n");
+        Component logo = Component.text("\n\n\uE238\n\n")
+                .font(Key.key("aethermc", "logo"));
+        Component header = Component.empty()
+                .append(logo)
+                .append(Component.text("\n")
+                    .font(Key.key("minecraft", "default")));
 
-        Component header = logo
-            .append(Component.text("§x§5§5§F§F§F§F§lAETHERMC\n"))
-            .append(Component.text("§8━━━━━━━━━━━━━━━━━━━━\n"))
-            .append(Component.text("§7Skyblock Generators\n"));
-
-        Component footer = Component.text("\n§8━━━━━━━━━━━━━━━━━━━━\n")
-            .append(Component.text("§7Connected to §bAetherMC §8| §f" + Bukkit.getOnlinePlayers().size() + " online\n"))
-            .append(Component.text("§7Ranks: §aVIP §8- §bVIP+ §8- §dMVP §8| §e/shop §8- §e/market\n"));
+        Component footer = Component.text("\nConnected to ")
+                .font(Key.key("minecraft", "default"))
+                .color(TextColor.fromHexString("#AAB7C4"))
+            .append(Component.text("AetherMC")
+                .font(Key.key("minecraft", "default"))
+                .color(TextColor.fromHexString("#55FFFF"))
+                .decorate(TextDecoration.BOLD))
+            .append(Component.text("  |  " + Bukkit.getOnlinePlayers().size() + " online\n")
+                .font(Key.key("minecraft", "default"))
+                .color(TextColor.fromHexString("#AAB7C4")));
 
         player.sendPlayerListHeaderAndFooter(header, footer);
     }
 
     private Rank parseRank(String input) {
         String normalized = input.toUpperCase(Locale.ROOT).replace("-", "_");
-        for (Rank rank : Rank.values()) {
-            if (rank.name().equals(normalized)) return rank;
-        }
-        return null;
+        return switch (normalized) {
+            case "MEMBER" -> Rank.MEMBER;
+            case "SKYFARER" -> Rank.VIP;
+            case "SKYFARER+", "SKYFARER_PLUS", "SKYFARERPLUS" -> Rank.VIP_PLUS;
+            case "AETHERLORD" -> Rank.MVP;
+            case "HELPER" -> Rank.HELPER;
+            case "OWNER" -> Rank.OWNER;
+            default -> null;
+        };
     }
 
     private String prefix(Rank rank) {
@@ -140,12 +151,21 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
         return ChatColor.translateAlternateColorCodes('&', configured);
     }
 
+    private String rankLabel(Rank rank) {
+        return switch (rank) {
+            case VIP -> "SKYFARER";
+            case VIP_PLUS -> "SKYFARER+";
+            case MVP -> "AETHERLORD";
+            default -> rank.name();
+        };
+    }
+
     private String displayName(Rank rank) {
-        return prefix(rank).replace("[", "").replace("]", "");
+        return rankLabel(rank);
     }
 
     private List<String> rankNames() {
-        return Arrays.stream(Rank.values()).map(Enum::name).map(String::toLowerCase).toList();
+        return List.of("member", "skyfarer", "skyfarer+", "aetherlord", "helper", "owner");
     }
 
     private void load() {
@@ -173,9 +193,9 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
 
     public enum Rank {
         MEMBER("§7[MEMBER]", 0),
-        VIP("&a[VIP]", 499),
-        VIP_PLUS("&b[VIP+]", 999),
-        MVP("&d[MVP]", 1999),
+        VIP("&a[SKYFARER]", 499),
+        VIP_PLUS("&b[SKYFARER+]", 999),
+        MVP("&d[AETHERLORD]", 1999),
         HELPER("&2[HELPER]", 0),
         OWNER("&4[OWNER]", 0);
 

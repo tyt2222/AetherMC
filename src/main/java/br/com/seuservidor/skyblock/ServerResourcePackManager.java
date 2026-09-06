@@ -9,6 +9,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 public final class ServerResourcePackManager implements Listener {
+    private static final String DEFAULT_PACK_URL =
+        "https://raw.githubusercontent.com/tyt2222/AetherMC/main/resource-pack/AetherMC-resource-pack.zip?v=3";
+    private static final String DEFAULT_PACK_SHA1 = "86df8bf262758110f3c72d1a878cacfe37bc02eb";
     private final SkyblockPlugin plugin;
     private final String url;
     private final byte[] sha1;
@@ -17,8 +20,10 @@ public final class ServerResourcePackManager implements Listener {
 
     public ServerResourcePackManager(SkyblockPlugin plugin) {
         this.plugin = plugin;
-        this.url = plugin.getConfig().getString("resource-pack.url", "");
-        this.sha1 = decodeSha1(plugin.getConfig().getString("resource-pack.sha1", ""));
+        String configuredUrl = plugin.getConfig().getString("resource-pack.url", "");
+        String configuredSha1 = plugin.getConfig().getString("resource-pack.sha1", "");
+        this.url = configuredUrl == null || configuredUrl.isBlank() ? DEFAULT_PACK_URL : configuredUrl;
+        this.sha1 = decodeSha1(configuredSha1 == null || configuredSha1.isBlank() ? DEFAULT_PACK_SHA1 : configuredSha1);
         this.required = plugin.getConfig().getBoolean("resource-pack.required", true);
         this.prompt = Component.text(plugin.getConfig().getString("resource-pack.prompt", "AetherMC requires its server resource pack."));
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -26,15 +31,20 @@ public final class ServerResourcePackManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        if (url == null || url.isBlank() || sha1.length != 20) return;
+        if (url == null || url.isBlank() || sha1.length != 20) {
+            plugin.getLogger().warning("Resource pack was not sent to " + event.getPlayer().getName()
+                + ": invalid URL or SHA-1.");
+            return;
+        }
         event.getPlayer().setResourcePack(url, sha1, prompt, required);
     }
 
     @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
-        if (!required) return;
+        if (!required || url == null || url.isBlank() || sha1.length != 20) return;
         Player player = event.getPlayer();
         switch (event.getStatus()) {
+            case SUCCESSFULLY_LOADED -> { }
             case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED ->
                 player.kick(Component.text("This server requires the AetherMC resource pack."));
             default -> { }

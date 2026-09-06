@@ -57,13 +57,17 @@ public class AdminResetCommand implements CommandExecutor {
         // 3. Teleport to Lobby
         target.teleport(lobby.getSpawn());
         
-        // 4. Reset Island Data
-        islands.deleteIsland(uuid);
-        islands.create(target);
-        
-        // 5. Reset Generators, Minions and Milestones
+        // 4. Reset Generators and Minions before clearing the island blocks.
         generators.resetPlayer(uuid);
         minions.resetPlayer(uuid);
+
+        // 5. Reset the physical island while keeping its original coordinates.
+        Island resetIsland = islands.resetIsland(uuid);
+        if (resetIsland == null) {
+            resetIsland = islands.create(target);
+        }
+
+        // 6. Reset Milestones
         milestones.resetPlayer(uuid);
         
         target.sendMessage("§c§lYour progress has been completely reset by an admin!");

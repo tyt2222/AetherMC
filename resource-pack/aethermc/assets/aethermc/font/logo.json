@@ -3,10 +3,10 @@
     {
       "type": "bitmap",
       "file": "aethermc:font/logo.png",
-      "ascent": 28,
-      "height": 32,
+      "ascent": 17,
+      "height": 52,
       "chars": [
-        "\uE000"
+        "\uE238"
       ]
     }
   ]

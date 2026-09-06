@@ -65,25 +65,24 @@ public final class PlayerSessionListener implements Listener {
             
             UUID uuid = player.getUniqueId();
             long balance = economy.getBalance(uuid);
-            double moneyPerSecond = economy.getMoneyPerSecond(uuid);
-            long moneyPerHour = economy.getMoneyPerHour(uuid);
-            int gensCount = generators.getCount(uuid);
-            int maxGens = milestones != null ? milestones.getGeneratorLimit(uuid) : 10;
-            int maxWorkers = milestones != null ? milestones.getWorkerLimit(uuid) : 1;
-            int playerLevel = milestones != null ? milestones.getOverallLevel(player) : 1;
+            UUID islandOwner = islands.getForPlayer(uuid).map(Island::owner).orElse(uuid);
+            long moneyPerHour = generators.getMoneyPerHour(islandOwner);
+            int maxGens = milestones != null ? milestones.getGeneratorLimit(islandOwner) : 10;
+            int maxWorkers = milestones != null ? milestones.getWorkerLimit(islandOwner) : 1;
+            int playerLevel = 1;
             
-            obj.getScore("§0§b§lꜱᴛᴀᴛɪꜱᴛɪᴄꜱ").setScore(11);
-            obj.getScore("§1§8━━━━━━━━━━━━").setScore(10);
+            obj.getScore("§f\u00A0§r").setScore(12);
+            obj.getScore("§1§b§lꜱᴛᴀᴛɪꜱᴛɪᴄꜱ").setScore(11);
+            obj.getScore("§1§8 ").setScore(10);
             obj.getScore("§2§7ʙᴀʟᴀɴᴄᴇ §f$" + formatValue(balance)).setScore(9);
-            obj.getScore("§3§7ᴍᴏɴᴇʏ/ꜱ §a$" + formatValue(moneyPerSecond)).setScore(8);
-            obj.getScore("§4§7ᴍᴏɴᴇʏ/ʜ §a$" + formatValue(moneyPerHour)).setScore(7);
-            obj.getScore("§5§8 ").setScore(6);
-            obj.getScore("§6§d§lᴘʟᴀʏᴇʀ").setScore(5);
-            obj.getScore("§7§8━━━━━━━━━━━━").setScore(4);
-            obj.getScore("§8§7ʟᴇᴠᴇʟ §f" + playerLevel).setScore(3);
-            obj.getScore("§9§7ɢᴇɴᴇʀᴀᴛᴏʀꜱ §f" + gensCount + "/" + maxGens).setScore(2);
-            obj.getScore("§a§7ᴍᴀx ᴡᴏʀᴋᴇʀꜱ §f" + maxWorkers).setScore(1);
-            obj.getScore("§b§8━━━━━━━━━━━━").setScore(0);
+            obj.getScore("§3§7ᴍᴏɴᴇʏ/ʜ §a$" + formatValue(moneyPerHour)).setScore(8);
+            obj.getScore("§4§8 ").setScore(7);
+            obj.getScore("§5§d§lᴘʟᴀʏᴇʀ").setScore(6);
+            obj.getScore("§f\u00A0").setScore(5);
+            obj.getScore("§7§7ʟᴇᴠᴇʟ §f" + playerLevel).setScore(4);
+            obj.getScore("§8§7ɢᴇɴᴇʀᴀᴛᴏʀꜱ §f" + generators.getCount(islandOwner) + "/" + maxGens).setScore(3);
+            obj.getScore("§9§7ᴍᴀx ᴡᴏʀᴋᴇʀꜱ §f" + maxWorkers).setScore(2);
+            obj.getScore("§b§8 ").setScore(0);
             
             player.setScoreboard(board);
         }

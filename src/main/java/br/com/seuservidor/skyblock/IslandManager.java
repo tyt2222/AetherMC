@@ -27,8 +27,17 @@ public final class IslandManager {
     }
     public Optional<Island> get(UUID owner) { return Optional.ofNullable(byOwner.get(owner)); }
     public Collection<Island> getAll() { return byOwner.values(); }
+    public Optional<Island> getForPlayer(UUID player) {
+        Optional<Island> coop = byOwner.values().stream()
+            .filter(island -> island.members().contains(player)).findFirst();
+        return coop.isPresent() ? coop : Optional.ofNullable(byOwner.get(player));
+    }
+    public boolean isMember(UUID player, UUID owner) {
+        Island island = byOwner.get(owner);
+        return island != null && island.hasMember(player);
+    }
     public boolean owns(Player player, Location location) {
-        return get(player.getUniqueId()).map(island -> island.contains(location, radius)).orElse(false);
+        return getForPlayer(player.getUniqueId()).map(island -> island.contains(location, radius)).orElse(false);
     }
     public boolean isSkyblockWorld(Location location) { return location.getWorld().equals(world); }
     public int radius() { return radius; }
@@ -37,9 +46,27 @@ public final class IslandManager {
         Island existing = byOwner.get(player.getUniqueId());
         if (existing != null) return existing;
         int index = nextIsland++;
-        int side = Math.max(1, (int) Math.ceil(Math.sqrt(nextIsland)));
-        int x = ((index % side) - side / 2) * spacing;
-        int z = ((index / side) - side / 2) * spacing;
+        int ring = (int) Math.ceil((Math.sqrt(index + 1) - 1) / 2);
+        int side = ring * 2 + 1;
+        int offset = index - (side - 2) * (side - 2);
+        int x;
+        int z;
+        if (ring == 0) {
+            x = 0;
+            z = 0;
+        } else if (offset < side - 1) {
+            x = -ring + offset;
+            z = -ring;
+        } else if (offset < 2 * (side - 1)) {
+            x = ring;
+            z = -ring + (offset - (side - 1));
+        } else if (offset < 3 * (side - 1)) {
+            x = ring - (offset - 2 * (side - 1));
+            z = ring;
+        } else {
+            x = -ring;
+            z = ring - (offset - 3 * (side - 1));
+        }
         Island island = new Island(player.getUniqueId(), x, z);
         byOwner.put(player.getUniqueId(), island);
         buildStarterIsland(island);
@@ -50,6 +77,33 @@ public final class IslandManager {
     public void deleteIsland(UUID owner) {
         byOwner.remove(owner);
         save();
+    }
+
+    public Island resetIsland(UUID owner) {
+        Island existing = byOwner.get(owner);
+        if (existing == null) return null;
+
+        clearIsland(existing);
+        Island reset = new Island(owner, existing.centerX(), existing.centerZ());
+        byOwner.put(owner, reset);
+        buildStarterIsland(reset);
+        save();
+        return reset;
+    }
+
+    private void clearIsland(Island island) {
+        int minX = island.centerX() - radius;
+        int maxX = island.centerX() + radius;
+        int minZ = island.centerZ() - radius;
+        int maxZ = island.centerZ() + radius;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int y = world.getMinHeight(); y < world.getMaxHeight(); y++) {
+                    world.getBlockAt(x, y, z).setType(Material.AIR, false);
+                }
+            }
+        }
     }
 
     private void buildStarterIsland(Island island) {
@@ -72,12 +126,40 @@ public final class IslandManager {
         nextIsland = data.getInt("next-island", 0);
         for (String id : data.getConfigurationSection("islands") == null ? Set.<String>of() : data.getConfigurationSection("islands").getKeys(false)) {
             UUID owner = UUID.fromString(id);
-            byOwner.put(owner, new Island(owner, data.getInt("islands." + id + ".x"), data.getInt("islands." + id + ".z")));
+            Island island = new Island(owner, data.getInt("islands." + id + ".x"), data.getInt("islands." + id + ".z"));
+            for (String member : data.getStringList("islands." + id + ".members")) {
+                try { island.addMember(UUID.fromString(member)); } catch (IllegalArgumentException ignored) { }
+            }
+            byOwner.put(owner, island);
         }
     }
     public void save() {
         YamlConfiguration data = new YamlConfiguration(); data.set("next-island", nextIsland);
-        byOwner.forEach((id, island) -> { data.set("islands." + id + ".x", island.centerX()); data.set("islands." + id + ".z", island.centerZ()); });
+        byOwner.forEach((id, island) -> {
+            data.set("islands." + id + ".x", island.centerX());
+            data.set("islands." + id + ".z", island.centerZ());
+            data.set("islands." + id + ".members", island.members().stream().map(UUID::toString).toList());
+        });
         try { data.save(dataFile); } catch (IOException e) { plugin.getLogger().severe("Falha ao salvar ilhas: " + e.getMessage()); }
+    }
+
+    public boolean invite(UUID owner, UUID member) {
+        Island island = byOwner.get(owner);
+        if (island == null || getCoopIsland(member).isPresent() || owner.equals(member)) return false;
+        island.addMember(member);
+        save();
+        return true;
+    }
+
+    public boolean removeMember(UUID owner, UUID member) {
+        Island island = byOwner.get(owner);
+        if (island == null || !island.members().contains(member)) return false;
+        island.removeMember(member);
+        save();
+        return true;
+    }
+
+    public Optional<Island> getCoopIsland(UUID player) {
+        return byOwner.values().stream().filter(island -> island.members().contains(player)).findFirst();
     }
 }
