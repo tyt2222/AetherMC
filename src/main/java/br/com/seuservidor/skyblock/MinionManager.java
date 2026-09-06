@@ -128,6 +128,9 @@ public class MinionManager implements Listener {
             
             hand.setAmount(hand.getAmount() - 1);
             countByOwner.merge(island.owner(), 1, Integer::sum);
+            if (plugin.getSessionListener() != null) {
+                plugin.getSessionListener().updateScoreboard(player);
+            }
             player.playSound(spawnLoc, Sound.ENTITY_ARMOR_STAND_PLACE, 1f, 1f);
         }
     }
@@ -144,6 +147,9 @@ public class MinionManager implements Listener {
                         String type = as.getPersistentDataContainer().get(minionKey, PersistentDataType.STRING);
                         as.remove();
                         countByOwner.merge(UUID.fromString(ownerStr), -1, Integer::sum);
+                        if (plugin.getSessionListener() != null) {
+                            plugin.getSessionListener().updateScoreboard(player);
+                        }
                         player.getInventory().addItem(createItem(type));
                         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
                         player.sendMessage("§aMinion picked up!");

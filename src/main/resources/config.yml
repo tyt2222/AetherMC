@@ -63,6 +63,9 @@ generators:
 generator-output-search-limit: 16
 data-save-interval-seconds: 30
 
+test-mode:
+  opme-enabled: true
+
 limits:
   max-item-entities-per-island: 100
   max-entities-per-island: 200
@@ -101,18 +104,20 @@ ranks:
     prefix: "&a[SKYFARER]"
     suggested-price: 499
   VIP_PLUS:
-    prefix: "&b[SKYFARER+]"
+    prefix: "&b[SKYBOUND]"
     suggested-price: 999
   MVP:
-    prefix: "&d[AETHERLORD]"
+    prefix: "&d[CELESTIAL]"
     suggested-price: 1999
   HELPER:
     prefix: "&2[HELPER]"
   OWNER:
     prefix: "&4[OWNER]"
+  ADMIN:
+    prefix: "&c[ADMIN]"
 
 resource-pack:
   required: true
   url: "http://127.0.0.1:8765/AetherMC-resource-pack.zip"
-  sha1: "3f206bfb160fe242ff33d9fb8a16d63bffba6ec6"
+  sha1: "269c6e3e11f441cc573e112f9e5caada1c3e6d9c"
   prompt: "AetherMC requires its server resource pack."

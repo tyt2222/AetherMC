@@ -16,6 +16,7 @@ public final class PlayerSessionListener implements Listener {
     private final EconomyManager economy;
     private final GeneratorManager generators;
     private final MilestoneManager milestones;
+    private final MinionManager minions;
 
     private static final DecimalFormat[] FORMATTERS = {
         new DecimalFormat("#,##0.#"),
@@ -25,12 +26,13 @@ public final class PlayerSessionListener implements Listener {
         new DecimalFormat("#,##0.#T")
     };
 
-    public PlayerSessionListener(IslandManager islands, LobbyManager lobby, EconomyManager economy, GeneratorManager generators, MilestoneManager milestones) {
+    public PlayerSessionListener(IslandManager islands, LobbyManager lobby, EconomyManager economy, GeneratorManager generators, MilestoneManager milestones, MinionManager minions) {
         this.islands = islands;
         this.lobby = lobby;
         this.economy = economy;
         this.generators = generators;
         this.milestones = milestones;
+        this.minions = minions;
     }
 
     public static String formatValue(double value) {
@@ -69,6 +71,7 @@ public final class PlayerSessionListener implements Listener {
             long moneyPerHour = generators.getMoneyPerHour(islandOwner);
             int maxGens = milestones != null ? milestones.getGeneratorLimit(islandOwner) : 10;
             int maxWorkers = milestones != null ? milestones.getWorkerLimit(islandOwner) : 1;
+            int workers = minions != null ? minions.getCount(islandOwner) : 0;
             int playerLevel = 1;
             
             obj.getScore("§f\u00A0§r").setScore(12);
@@ -81,7 +84,7 @@ public final class PlayerSessionListener implements Listener {
             obj.getScore("§f\u00A0").setScore(5);
             obj.getScore("§7§7ʟᴇᴠᴇʟ §f" + playerLevel).setScore(4);
             obj.getScore("§8§7ɢᴇɴᴇʀᴀᴛᴏʀꜱ §f" + generators.getCount(islandOwner) + "/" + maxGens).setScore(3);
-            obj.getScore("§9§7ᴍᴀx ᴡᴏʀᴋᴇʀꜱ §f" + maxWorkers).setScore(2);
+            obj.getScore("§9§7ᴡᴏʀᴋᴇʀꜱ §f" + workers + "/" + maxWorkers).setScore(2);
             obj.getScore("§b§8 ").setScore(0);
             
             player.setScoreboard(board);

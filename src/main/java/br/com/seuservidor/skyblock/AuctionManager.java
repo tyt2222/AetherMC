@@ -305,6 +305,10 @@ public final class AuctionManager implements CommandExecutor, Listener {
         }
     }
 
+    public void removeListings(UUID seller) {
+        if (listings.removeIf(listing -> listing.seller().equals(seller))) save();
+    }
+
     private enum MarketTab { ALL, MY }
     private record Listing(int id, UUID seller, String sellerName, long price, ItemStack item) { }
     private record MarketView(MarketTab tab, int page, Map<Integer, Integer> slotListings) { }

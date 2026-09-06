@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -51,6 +52,32 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler public void onBucket(PlayerBucketEmptyEvent event) { if (deny(event.getPlayer(), event.getBlockClicked())) event.setCancelled(true); }
     @EventHandler public void onBucket(PlayerBucketFillEvent event) { if (deny(event.getPlayer(), event.getBlockClicked())) event.setCancelled(true); }
+
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        if (islands.isSkyblockWorld(event.getLocation())) event.blockList().clear();
+    }
+
+    @EventHandler
+    public void onBlockExplode(BlockExplodeEvent event) {
+        if (islands.isSkyblockWorld(event.getBlock().getLocation())) event.blockList().clear();
+    }
+
+    @EventHandler
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        if (!islands.isSkyblockWorld(event.getBlock().getLocation())) return;
+        if (event.getBlocks().stream().anyMatch(block -> islands.isSkyblockWorld(block.getLocation()))) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        if (!islands.isSkyblockWorld(event.getBlock().getLocation())) return;
+        if (event.getBlocks().stream().anyMatch(block -> islands.isSkyblockWorld(block.getLocation()))) {
+            event.setCancelled(true);
+        }
+    }
 
     // Imortalidade
     @EventHandler public void onDamage(EntityDamageEvent event) {

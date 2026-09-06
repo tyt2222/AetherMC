@@ -67,7 +67,7 @@ public final class IslandManager {
             x = -ring;
             z = ring - (offset - 3 * (side - 1));
         }
-        Island island = new Island(player.getUniqueId(), x, z);
+        Island island = new Island(player.getUniqueId(), x * spacing, z * spacing);
         byOwner.put(player.getUniqueId(), island);
         buildStarterIsland(island);
         save();

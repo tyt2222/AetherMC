@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 public final class ServerResourcePackManager implements Listener {
     private static final String DEFAULT_PACK_URL =
         "https://raw.githubusercontent.com/tyt2222/AetherMC/main/resource-pack/AetherMC-resource-pack.zip?v=3";
-    private static final String DEFAULT_PACK_SHA1 = "86df8bf262758110f3c72d1a878cacfe37bc02eb";
+    private static final String DEFAULT_PACK_SHA1 = "269c6e3e11f441cc573e112f9e5caada1c3e6d9c";
     private final SkyblockPlugin plugin;
     private final String url;
     private final byte[] sha1;
@@ -43,6 +43,7 @@ public final class ServerResourcePackManager implements Listener {
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
         if (!required || url == null || url.isBlank() || sha1.length != 20) return;
         Player player = event.getPlayer();
+        plugin.getLogger().info("Resource pack status for " + player.getName() + ": " + event.getStatus());
         switch (event.getStatus()) {
             case SUCCESSFULLY_LOADED -> { }
             case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED ->

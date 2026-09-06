@@ -1,0 +1,46 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_owner.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE800"]
+    },
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_admin.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE801"]
+    },
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_helper.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE802"]
+    },
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_skybound.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE803"]
+    },
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_celestial.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE804"]
+    },
+    {
+      "type": "bitmap",
+      "file": "aethermc:font/ranks/rank_skyfarer.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE805"]
+    }
+  ]
+}

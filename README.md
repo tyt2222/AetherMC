@@ -76,8 +76,11 @@ Generated at runtime inside `plugins/SkyblockGenerators/` on the server:
 
 ```powershell
 .\dev_run.ps1
-mvn package
+.\dev_run.ps1 -BuildOnly
 ```
+
+O script prepara automaticamente o Maven local quando necessário. Use
+`-BuildOnly` para compilar e copiar o JAR para `test-server\plugins` sem iniciar o servidor de testes.
 
 ## Git
 
@@ -103,6 +106,8 @@ All project code, commits, and releases are attributed to tyt2222.
 ## Known Notes
 
 - `/opme` is intentionally kept for the test environment.
+- Desative `test-mode.opme-enabled` no `config.yml` runtime antes de produção.
+- O script de testes define `enforce-secure-profile=false` para permitir chat em clientes locais sem chave pública de perfil. Em produção, revise essa opção junto com `online-mode` e os requisitos de segurança das contas.
 - Global no-damage and no-hunger are intentional for now.
 - `logo.png` is stored in the project root and packaged as a custom-font asset used by the player list header.
 - Generated pack: `resource-pack/AetherMC-resource-pack.zip`.

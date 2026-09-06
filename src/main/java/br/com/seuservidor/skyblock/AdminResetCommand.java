@@ -17,8 +17,10 @@ public class AdminResetCommand implements CommandExecutor {
     private final PlayerSessionListener sessionListener;
     private final MilestoneManager milestones;
     private final MinionManager minions;
+    private final AuctionManager auctions;
+    private final RankManager ranks;
 
-    public AdminResetCommand(IslandManager islands, EconomyManager economy, LobbyManager lobby, GeneratorManager generators, PlayerSessionListener sessionListener, MilestoneManager milestones, MinionManager minions) {
+    public AdminResetCommand(IslandManager islands, EconomyManager economy, LobbyManager lobby, GeneratorManager generators, PlayerSessionListener sessionListener, MilestoneManager milestones, MinionManager minions, AuctionManager auctions, RankManager ranks) {
         this.islands = islands;
         this.economy = economy;
         this.lobby = lobby;
@@ -26,6 +28,8 @@ public class AdminResetCommand implements CommandExecutor {
         this.sessionListener = sessionListener;
         this.milestones = milestones;
         this.minions = minions;
+        this.auctions = auctions;
+        this.ranks = ranks;
     }
 
     @Override
@@ -69,6 +73,9 @@ public class AdminResetCommand implements CommandExecutor {
 
         // 6. Reset Milestones
         milestones.resetPlayer(uuid);
+        auctions.removeListings(uuid);
+        ranks.resetPlayer(uuid);
+        ranks.applyRank(target);
         
         target.sendMessage("§c§lYour progress has been completely reset by an admin!");
         sender.sendMessage("§aProgress for " + target.getName() + " has been reset.");

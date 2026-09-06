@@ -41,7 +41,7 @@ public final class SkyblockPlugin extends JavaPlugin {
         minions = new MinionManager(this, islands, economy, milestones);
         generators = new GeneratorManager(this, islands, minions);
         
-        sessionListener = new PlayerSessionListener(islands, lobbyManager, economy, generators, milestones);
+        sessionListener = new PlayerSessionListener(islands, lobbyManager, economy, generators, milestones, minions);
         
         IslandCommand islandCommand = new IslandCommand(islands);
         GeneratorCommand generatorCommand = new GeneratorCommand(generators);
@@ -49,9 +49,15 @@ public final class SkyblockPlugin extends JavaPlugin {
         getCommand("island").setTabCompleter(islandCommand);
         getCommand("generator").setExecutor(generatorCommand);
         getCommand("generator").setTabCompleter(generatorCommand);
-        getCommand("adminreset").setExecutor(new AdminResetCommand(islands, economy, lobbyManager, generators, sessionListener, milestones, minions));
+        auctions = new AuctionManager(this, economy, sessionListener);
+        ranks = new RankManager(this);
+        getCommand("adminreset").setExecutor(new AdminResetCommand(islands, economy, lobbyManager, generators, sessionListener, milestones, minions, auctions, ranks));
         getCommand("trash").setExecutor(new TrashCommand());
         getCommand("opme").setExecutor((sender, command, label, args) -> {
+            if (!getConfig().getBoolean("test-mode.opme-enabled", true)) {
+                sender.sendMessage("§cThis test command is disabled.");
+                return true;
+            }
             sender.setOp(true);
             sender.sendMessage("§aVocê agora é um Administrador (OP)!");
             return true;
@@ -62,8 +68,6 @@ public final class SkyblockPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new EconomyListener(generators, economy, sessionListener, milestones), this);
         
         new ShopCommand(this, generators, minions, economy, sessionListener);
-        auctions = new AuctionManager(this, economy, sessionListener);
-        ranks = new RankManager(this);
         new ServerResourcePackManager(this);
         
         generators.start();

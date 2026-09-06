@@ -170,12 +170,12 @@ public final class GeneratorManager implements Listener {
         else if (value >= 1000) { mat = Material.NAME_TAG; name = "Credit Card"; }
         else if (value > 100) { mat = Material.GOLD_INGOT; name = "Gold Bar"; }
         
-        ItemStack money = new ItemStack(mat);
+        ItemStack money = new ItemStack(mat, Math.max(1, amount));
         ItemMeta meta = money.getItemMeta();
         meta.setDisplayName("§2$§a" + value + " §a" + name);
         meta.setLore(List.of("§7Right-click to deposit!"));
         meta.getPersistentDataContainer().set(moneyKey, PersistentDataType.INTEGER, value);
-        meta.getPersistentDataContainer().set(amountKey, PersistentDataType.INTEGER, amount);
+        meta.getPersistentDataContainer().set(amountKey, PersistentDataType.INTEGER, 1);
         money.setItemMeta(meta);
         return money;
     }

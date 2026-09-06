@@ -3,6 +3,7 @@ package br.com.seuservidor.skyblock;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -16,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -89,9 +91,16 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     @EventHandler
+    public void onResourcePackStatus(PlayerResourcePackStatusEvent event) {
+        if (event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
+            applyRank(event.getPlayer());
+        }
+    }
+
+    @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         Rank rank = getRank(event.getPlayer());
-        event.setFormat(prefix(rank) + " §7%1$s§8: §f%2$s");
+        event.setFormat("%1$s§8: §f%2$s");
     }
 
     public Rank getRank(Player player) {
@@ -100,8 +109,20 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
 
     public void applyRank(Player player) {
         Rank rank = getRank(player);
-        player.setPlayerListName(prefix(rank) + " §f" + player.getName());
-        player.setDisplayName(prefix(rank) + " §f" + player.getName());
+        Component name = rankGlyph(rank) == null
+                ? LegacyComponentSerializer.legacySection().deserialize(
+                    prefix(rank) + " " + nameColor(rank) + player.getName()
+                ).font(Key.key("minecraft", "default"))
+                : Component.empty()
+                    .append(Component.text(rankGlyph(rank))
+                        .font(Key.key("aethermc", "ranks")))
+                    .append(Component.text(" ")
+                        .font(Key.key("minecraft", "default")))
+                    .append(LegacyComponentSerializer.legacySection().deserialize(
+                        nameColor(rank) + player.getName()
+                    ).font(Key.key("minecraft", "default")));
+        player.playerListName(name);
+        player.displayName(name);
         updateTabList(player);
     }
 
@@ -112,10 +133,13 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private void updateTabList(Player player) {
-        Component logo = Component.text("\n\n\n\uE238\n\n\n")
-                .font(Key.key("aethermc", "logo"));
         Component header = Component.empty()
-                .append(logo)
+                .append(Component.text("\n\n\n")
+                    .font(Key.key("minecraft", "default")))
+                .append(Component.text("\uE238")
+                    .font(Key.key("aethermc", "logo")))
+                .append(Component.text("\n\n\n")
+                    .font(Key.key("minecraft", "default")))
                 .append(Component.text("\n")
                     .font(Key.key("minecraft", "default")));
 
@@ -138,24 +162,51 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
         return switch (normalized) {
             case "MEMBER" -> Rank.MEMBER;
             case "SKYFARER" -> Rank.VIP;
-            case "SKYFARER+", "SKYFARER_PLUS", "SKYFARERPLUS" -> Rank.VIP_PLUS;
-            case "AETHERLORD" -> Rank.MVP;
+            case "SKYBOUND", "SKYFARER+", "SKYFARER_PLUS", "SKYFARERPLUS" -> Rank.VIP_PLUS;
+            case "CELESTIAL", "AETHERLORD" -> Rank.MVP;
             case "HELPER" -> Rank.HELPER;
             case "OWNER" -> Rank.OWNER;
+            case "ADMIN" -> Rank.ADMIN;
             default -> null;
         };
     }
 
     private String prefix(Rank rank) {
+        String glyph = rankGlyph(rank);
+        if (glyph != null) return glyph;
+
         String configured = plugin.getConfig().getString("ranks." + rank.name() + ".prefix", rank.defaultPrefix());
+        if (rank == Rank.MVP && configured.contains("AETHERLORD")) {
+            configured = configured.replace("AETHERLORD", "CELESTIAL");
+        }
+        if (rank == Rank.VIP_PLUS && configured.contains("SKYFARER")) {
+            configured = configured.replace("SKYFARER+", "SKYBOUND");
+        }
         return ChatColor.translateAlternateColorCodes('&', configured);
+    }
+
+    private String rankGlyph(Rank rank) {
+        return switch (rank) {
+            case OWNER -> "\uE800";
+            case ADMIN -> "\uE801";
+            case HELPER -> "\uE802";
+            case VIP_PLUS -> "\uE803";
+            case MVP -> "\uE804";
+            case VIP -> "\uE805";
+            default -> null;
+        };
+    }
+
+    private String nameColor(Rank rank) {
+        String configured = plugin.getConfig().getString("ranks." + rank.name() + ".name-color");
+        return configured == null ? rank.nameColor() : ChatColor.translateAlternateColorCodes('&', configured);
     }
 
     private String rankLabel(Rank rank) {
         return switch (rank) {
             case VIP -> "SKYFARER";
-            case VIP_PLUS -> "SKYFARER+";
-            case MVP -> "AETHERLORD";
+            case VIP_PLUS -> "SKYBOUND";
+            case MVP -> "CELESTIAL";
             default -> rank.name();
         };
     }
@@ -165,7 +216,7 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private List<String> rankNames() {
-        return List.of("member", "skyfarer", "skyfarer+", "aetherlord", "helper", "owner");
+        return List.of("member", "skyfarer", "skybound", "celestial", "helper", "admin", "owner");
     }
 
     private void load() {
@@ -191,23 +242,31 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
         }
     }
 
+    public void resetPlayer(UUID uuid) {
+        if (ranks.remove(uuid) != null) save();
+    }
+
     public enum Rank {
-        MEMBER("§7[MEMBER]", 0),
-        VIP("&a[SKYFARER]", 499),
-        VIP_PLUS("&b[SKYFARER+]", 999),
-        MVP("&d[AETHERLORD]", 1999),
-        HELPER("&2[HELPER]", 0),
-        OWNER("&4[OWNER]", 0);
+        MEMBER("§7[MEMBER]", "§7", 0),
+        VIP("&a[SKYFARER]", "§a", 499),
+        VIP_PLUS("&b[SKYBOUND]", "§b", 999),
+        MVP("&d[AETHERLORD]", "§d", 1999),
+        HELPER("&2[HELPER]", "§2", 0),
+        OWNER("&4[OWNER]", "§4", 0),
+        ADMIN("&c[ADMIN]", "§c", 0);
 
         private final String defaultPrefix;
+        private final String nameColor;
         private final int suggestedPrice;
 
-        Rank(String defaultPrefix, int suggestedPrice) {
+        Rank(String defaultPrefix, String nameColor, int suggestedPrice) {
             this.defaultPrefix = defaultPrefix;
+            this.nameColor = nameColor;
             this.suggestedPrice = suggestedPrice;
         }
 
         public String defaultPrefix() { return defaultPrefix; }
+        public String nameColor() { return nameColor; }
         public int suggestedPrice() { return suggestedPrice; }
     }
 }
