@@ -72,15 +72,18 @@ public final class PlayerSessionListener implements Listener {
             int maxWorkers = milestones != null ? milestones.getWorkerLimit(uuid) : 1;
             int playerLevel = milestones != null ? milestones.getOverallLevel(player) : 1;
             
-            obj.getScore("§0  §f§lSTATISTICS").setScore(8);
-            obj.getScore("§1§7 Balance: §f$" + formatValue(balance)).setScore(7);
-            obj.getScore("§2§7 Money/s: §a$" + formatValue(moneyPerSecond)).setScore(6);
-            obj.getScore("§3§7 Money/h: §a$" + formatValue(moneyPerHour)).setScore(5);
-            obj.getScore("§4").setScore(4);
-            obj.getScore("§5  §f§lPLAYER").setScore(3);
-            obj.getScore("§6§7 Level: §f" + playerLevel).setScore(2);
-            obj.getScore("§7§7 Generators: §f" + gensCount + "/" + maxGens).setScore(1);
-            obj.getScore("§8§7 Workers: §f" + maxWorkers).setScore(0);
+            obj.getScore("§0§b§lꜱᴛᴀᴛɪꜱᴛɪᴄꜱ").setScore(11);
+            obj.getScore("§1§8━━━━━━━━━━━━").setScore(10);
+            obj.getScore("§2§7ʙᴀʟᴀɴᴄᴇ §f$" + formatValue(balance)).setScore(9);
+            obj.getScore("§3§7ᴍᴏɴᴇʏ/ꜱ §a$" + formatValue(moneyPerSecond)).setScore(8);
+            obj.getScore("§4§7ᴍᴏɴᴇʏ/ʜ §a$" + formatValue(moneyPerHour)).setScore(7);
+            obj.getScore("§5§8 ").setScore(6);
+            obj.getScore("§6§d§lᴘʟᴀʏᴇʀ").setScore(5);
+            obj.getScore("§7§8━━━━━━━━━━━━").setScore(4);
+            obj.getScore("§8§7ʟᴇᴠᴇʟ §f" + playerLevel).setScore(3);
+            obj.getScore("§9§7ɢᴇɴᴇʀᴀᴛᴏʀꜱ §f" + gensCount + "/" + maxGens).setScore(2);
+            obj.getScore("§a§7ᴍᴀx ᴡᴏʀᴋᴇʀꜱ §f" + maxWorkers).setScore(1);
+            obj.getScore("§b§8━━━━━━━━━━━━").setScore(0);
             
             player.setScoreboard(board);
         }

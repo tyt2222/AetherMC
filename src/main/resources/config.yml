@@ -110,5 +110,5 @@ ranks:
 resource-pack:
   required: true
   url: ""
-  sha1: "e9d4919ded769d5d467cef38b6b27d21121d0c25"
+  sha1: "86df8bf262758110f3c72d1a878cacfe37bc02eb"
   prompt: "AetherMC requires its server resource pack."

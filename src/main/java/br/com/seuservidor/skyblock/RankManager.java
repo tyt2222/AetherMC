@@ -1,6 +1,7 @@
 package br.com.seuservidor.skyblock;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -109,14 +110,21 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private void updateTabList(Player player) {
-        String header = "\n"
-            + "§f\uE000\n"
-            + "§x§5§5§F§F§F§F§lAETHERMC\n"
-            + "§7Skyblock Generators\n";
-        String footer = "\n"
-            + "§7You are connected to §bAetherMC §8| §f" + Bukkit.getOnlinePlayers().size() + " players online\n"
-            + "§7Ranks: §aVIP §8- §bVIP+ §8- §dMVP §8| §fUse §e/shop §for §e/market\n";
-        player.setPlayerListHeaderFooter(header, footer);
+        boolean packConfigured = !plugin.getConfig().getString("resource-pack.url", "").isBlank();
+        Component logo = packConfigured
+            ? Component.text("\n\uE000\n").font(Key.key("aethermc:logo"))
+            : Component.text("\n");
+
+        Component header = logo
+            .append(Component.text("§x§5§5§F§F§F§F§lAETHERMC\n"))
+            .append(Component.text("§8━━━━━━━━━━━━━━━━━━━━\n"))
+            .append(Component.text("§7Skyblock Generators\n"));
+
+        Component footer = Component.text("\n§8━━━━━━━━━━━━━━━━━━━━\n")
+            .append(Component.text("§7Connected to §bAetherMC §8| §f" + Bukkit.getOnlinePlayers().size() + " online\n"))
+            .append(Component.text("§7Ranks: §aVIP §8- §bVIP+ §8- §dMVP §8| §e/shop §8- §e/market\n"));
+
+        player.sendPlayerListHeaderAndFooter(header, footer);
     }
 
     private Rank parseRank(String input) {
