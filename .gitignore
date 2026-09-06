@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+*.jar
+.m2/
+test-server/
