@@ -112,7 +112,7 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private void updateTabList(Player player) {
-        Component logo = Component.text("\n\n\uE238\n\n")
+        Component logo = Component.text("\n\n\n\uE238\n\n\n")
                 .font(Key.key("aethermc", "logo"));
         Component header = Component.empty()
                 .append(logo)

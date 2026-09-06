@@ -94,6 +94,12 @@ git config user.name "tyt2222"
 git config user.email "fabio.paiva.dev@gmail.com"
 ```
 
+Project authorship:
+
+```text
+All project code, commits, and releases are attributed to tyt2222.
+```
+
 ## Known Notes
 
 - `/opme` is intentionally kept for the test environment.
