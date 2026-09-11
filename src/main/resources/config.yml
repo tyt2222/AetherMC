@@ -1,63 +1,123 @@
 generators:
   coal:
     display-name: "&8Coal Generator"
-    interval-seconds: 15
+    interval-seconds: 3
     note-value: 10
     note-amount: 1
     block-type: COAL_ORE
   iron:
     display-name: "&fIron Generator"
-    interval-seconds: 10
+    interval-seconds: 4
     note-value: 10
-    note-amount: 1
+    note-amount: 2
     block-type: IRON_ORE
   gold:
     display-name: "&6Gold Generator"
-    interval-seconds: 15
-    note-value: 100
-    note-amount: 1
+    interval-seconds: 6
+    note-value: 10
+    note-amount: 3
     block-type: GOLD_ORE
   diamond:
     display-name: "&bDiamond Generator"
-    interval-seconds: 10
-    note-value: 100
-    note-amount: 1
+    interval-seconds: 5
+    note-value: 10
+    note-amount: 5
     block-type: DIAMOND_ORE
   emerald:
     display-name: "&aEmerald Generator"
-    interval-seconds: 15
-    note-value: 1000
-    note-amount: 1
+    interval-seconds: 8
+    note-value: 10
+    note-amount: 8
     block-type: EMERALD_ORE
   lapis:
     display-name: "&9Lapis Generator"
-    interval-seconds: 10
-    note-value: 1000
-    note-amount: 1
+    interval-seconds: 4
+    note-value: 100
+    note-amount: 2
     block-type: LAPIS_ORE
   redstone:
     display-name: "&cRedstone Generator"
-    interval-seconds: 10
-    note-value: 1000
-    note-amount: 2
+    interval-seconds: 7
+    note-value: 100
+    note-amount: 3
     block-type: REDSTONE_ORE
   quartz:
     display-name: "&fQuartz Generator"
-    interval-seconds: 15
-    note-value: 10000
-    note-amount: 1
+    interval-seconds: 9
+    note-value: 100
+    note-amount: 5
     block-type: NETHER_QUARTZ_ORE
   netherite:
     display-name: "&4Netherite Generator"
-    interval-seconds: 10
-    note-value: 10000
-    note-amount: 1
+    interval-seconds: 6
+    note-value: 100
+    note-amount: 8
     block-type: ANCIENT_DEBRIS
-  aether:
-    display-name: "&b&lAether Generator"
+  obsidian:
+    display-name: "&5Obsidian Generator"
+    interval-seconds: 10
+    note-value: 100
+    note-amount: 12
+    block-type: OBSIDIAN
+  amethyst:
+    display-name: "&dAmethyst Generator"
     interval-seconds: 5
+    note-value: 1000
+    note-amount: 2
+    block-type: AMETHYST_BLOCK
+  copper:
+    display-name: "&6Copper Generator"
+    interval-seconds: 8
+    note-value: 1000
+    note-amount: 3
+    block-type: COPPER_BLOCK
+  prismarine:
+    display-name: "&3Prismarine Generator"
+    interval-seconds: 11
+    note-value: 1000
+    note-amount: 5
+    block-type: PRISMARINE
+  sea_lantern:
+    display-name: "&bSea Lantern Generator"
+    interval-seconds: 7
+    note-value: 1000
+    note-amount: 8
+    block-type: SEA_LANTERN
+  crying_obsidian:
+    display-name: "&5Crying Obsidian Generator"
+    interval-seconds: 12
+    note-value: 1000
+    note-amount: 12
+    block-type: CRYING_OBSIDIAN
+  end_stone:
+    display-name: "&eEnd Stone Generator"
+    interval-seconds: 6
     note-value: 10000
     note-amount: 2
+    block-type: END_STONE
+  purpur:
+    display-name: "&dPurpur Generator"
+    interval-seconds: 9
+    note-value: 10000
+    note-amount: 3
+    block-type: PURPUR_BLOCK
+  magma:
+    display-name: "&cMagma Generator"
+    interval-seconds: 13
+    note-value: 10000
+    note-amount: 5
+    block-type: MAGMA_BLOCK
+  end_crystal:
+    display-name: "&fEnd Crystal Generator"
+    interval-seconds: 10
+    note-value: 10000
+    note-amount: 8
+    block-type: END_STONE_BRICKS
+  aether:
+    display-name: "&b&lAether Generator"
+    interval-seconds: 15
+    note-value: 10000
+    note-amount: 12
     block-type: BEACON
 
 generator-output-search-limit: 16
@@ -72,16 +132,26 @@ limits:
 
 shop:
   generators:
-    coal: 100
-    iron: 500
-    gold: 1000
-    diamond: 5000
-    emerald: 10000
-    lapis: 30000
-    redstone: 50000
-    quartz: 100000
+    coal: 0
+    iron: 1000
+    gold: 5000
+    diamond: 10000
+    emerald: 25000
+    lapis: 50000
+    redstone: 100000
+    quartz: 250000
     netherite: 500000
-    aether: 1000000
+    obsidian: 1000000
+    amethyst: 2500000
+    copper: 5000000
+    prismarine: 10000000
+    sea_lantern: 25000000
+    crying_obsidian: 50000000
+    end_stone: 100000000
+    purpur: 250000000
+    magma: 500000000
+    end_crystal: 750000000
+    aether: 1000000000
   blocks:
     STONE: 10
     OAK_PLANKS: 10
@@ -94,8 +164,12 @@ shop:
     SPRUCE_PLANKS: 10
     OAK_LOG: 20
   minions:
-    collector_3x3: 500000
-    collector_5x5: 5000000
+    collector: 500000
+    miner: 2500000
+  tools:
+    IRON: 0
+    DIAMOND: 50000
+    NETHERITE: 250000
 
 ranks:
   MEMBER:
@@ -116,8 +190,13 @@ ranks:
   ADMIN:
     prefix: "&c[ADMIN]"
 
+server-list:
+  name: "AetherMC"
+  motd-line-1: "&b&lAetherMC &8| &fOFFICIAL SURVIVAL SERVER &7[1.20.4]"
+  motd-line-2: "&aONLINE &8- &fJoin 500+ Players Now!"
+
 resource-pack:
   required: true
   url: "http://127.0.0.1:8765/AetherMC-resource-pack.zip"
-  sha1: "269c6e3e11f441cc573e112f9e5caada1c3e6d9c"
+  sha1: "1e83793b6bb457c9be42f4606919e4ec8982dc7f"
   prompt: "AetherMC requires its server resource pack."

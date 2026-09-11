@@ -3,12 +3,12 @@ version: 0.1.0
 main: br.com.seuservidor.skyblock.SkyblockPlugin
 api-version: '1.21'
 author: SeuServidor
-description: Base de Skyblock com ilhas e geradores.
+description: AetherMC skyblock with islands and generators.
 commands:
   island:
     description: Create and manage your island.
-    aliases: [is]
-    usage: /island <create|home|info|invite|kick|leave|members>
+    aliases: [is, isle]
+    usage: /island <create|home|open|close|visit|info|invite|kick|leave|members>
   generator:
     description: Manage generators.
     aliases: [gen]

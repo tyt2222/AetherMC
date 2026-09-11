@@ -25,8 +25,8 @@ public final class GeneratorCommand implements CommandExecutor, TabCompleter {
     }
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) return List.of("give");
-        if (args.length == 2) return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
-        if (args.length == 3) return new ArrayList<>(generators.typeIds());
+        if (args.length == 2 && args[0].equalsIgnoreCase("give")) return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")) return new ArrayList<>(generators.typeIds());
         return List.of();
     }
 }

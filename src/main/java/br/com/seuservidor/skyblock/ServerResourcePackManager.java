@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 public final class ServerResourcePackManager implements Listener {
     private static final String DEFAULT_PACK_URL =
         "https://raw.githubusercontent.com/tyt2222/AetherMC/main/resource-pack/AetherMC-resource-pack.zip?v=3";
-    private static final String DEFAULT_PACK_SHA1 = "269c6e3e11f441cc573e112f9e5caada1c3e6d9c";
+    private static final String DEFAULT_PACK_SHA1 = "1e83793b6bb457c9be42f4606919e4ec8982dc7f";
     private final SkyblockPlugin plugin;
     private final String url;
     private final byte[] sha1;
@@ -31,12 +31,17 @@ public final class ServerResourcePackManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
         if (url == null || url.isBlank() || sha1.length != 20) {
-            plugin.getLogger().warning("Resource pack was not sent to " + event.getPlayer().getName()
+            plugin.getLogger().warning("Resource pack was not sent to " + player.getName()
                 + ": invalid URL or SHA-1.");
             return;
         }
-        event.getPlayer().setResourcePack(url, sha1, prompt, required);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                player.setResourcePack(url, sha1, prompt, required);
+            }
+        }, 20L);
     }
 
     @EventHandler

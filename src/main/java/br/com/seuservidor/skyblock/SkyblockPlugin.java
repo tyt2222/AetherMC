@@ -28,6 +28,7 @@ public final class SkyblockPlugin extends JavaPlugin {
         }
         if (world == null) throw new IllegalStateException("Não foi possível criar o mundo skyblock.");
         world.setSpawnLocation(0, 100, 0);
+        configureSkyblockWorld(world);
 
         saveDefaultConfig();
         
@@ -66,11 +67,15 @@ public final class SkyblockPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ProtectionListener(this, islands, generators), this);
         Bukkit.getPluginManager().registerEvents(sessionListener, this);
         Bukkit.getPluginManager().registerEvents(new EconomyListener(generators, economy, sessionListener, milestones), this);
+        Bukkit.getPluginManager().registerEvents(new MoneyDropListener(generators), this);
         
         new ShopCommand(this, generators, minions, economy, sessionListener);
+        new ServerListManager(this);
         new ServerResourcePackManager(this);
         
         generators.start();
+        World skyblockWorld = world;
+        Bukkit.getScheduler().runTaskTimer(this, () -> configureSkyblockWorld(skyblockWorld), 1L, 20L * 10L);
         int saveInterval = Math.max(5, getConfig().getInt("data-save-interval-seconds", 30)) * 20;
         Bukkit.getScheduler().runTaskTimer(this, this::saveDirtyData, saveInterval, saveInterval);
     }
@@ -82,17 +87,32 @@ public final class SkyblockPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        Bukkit.getScheduler().cancelTasks(this);
         if (generators != null) generators.save();
         if (islands != null) islands.save();
         if (economy != null) economy.save();
         if (milestones != null) milestones.saveIfDirty();
         if (auctions != null) auctions.save();
         if (ranks != null) ranks.save();
+        for (World world : Bukkit.getWorlds()) world.save();
     }
 
     private void saveDirtyData() {
         if (economy != null) economy.saveIfDirty();
         if (milestones != null) milestones.saveIfDirty();
+        if (islands != null) islands.save();
+        if (generators != null) generators.save();
+        if (auctions != null) auctions.save();
+        if (ranks != null) ranks.save();
+    }
+
+    private void configureSkyblockWorld(World world) {
+        world.setTime(1000L);
+        world.setStorm(false);
+        world.setThundering(false);
+        world.setGameRule(org.bukkit.GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setGameRule(org.bukkit.GameRule.DO_WEATHER_CYCLE, false);
+        world.setGameRule(org.bukkit.GameRule.ANNOUNCE_ADVANCEMENTS, false);
     }
 
     public static final class VoidGenerator extends ChunkGenerator { }

@@ -20,7 +20,7 @@ public class EconomyManager {
     public EconomyManager(SkyblockPlugin plugin) {
         this.plugin = plugin;
         this.dataFile = new File(plugin.getDataFolder(), "economy.yml");
-        this.data = YamlConfiguration.loadConfiguration(dataFile);
+        this.data = DataFileUtil.load(dataFile);
         
         if (data.contains("balances")) {
             for (String key : data.getConfigurationSection("balances").getKeys(false)) {
@@ -57,7 +57,7 @@ public class EconomyManager {
             data.set("balances." + uuid.toString(), balances.get(uuid));
         }
         try {
-            data.save(dataFile);
+            DataFileUtil.save(data, dataFile);
             dirty = false;
         } catch (Exception e) {
             e.printStackTrace();

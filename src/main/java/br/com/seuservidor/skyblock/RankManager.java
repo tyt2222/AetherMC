@@ -1,10 +1,12 @@
 package br.com.seuservidor.skyblock;
 
+import io.papermc.paper.chat.ChatRenderer;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,24 +16,28 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class RankManager implements CommandExecutor, TabCompleter, Listener {
+    private static final TextColor FOOTER_MUTED = TextColor.fromHexString("#AAB7C4");
+    private static final TextColor FOOTER_ACCENT = TextColor.fromHexString("#55FFFF");
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+
     private final SkyblockPlugin plugin;
     private final File dataFile;
-    private final Map<UUID, Rank> ranks = new HashMap<>();
+    private final Map<UUID, Rank> ranks = new ConcurrentHashMap<>();
 
     public RankManager(SkyblockPlugin plugin) {
         this.plugin = plugin;
@@ -79,8 +85,8 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) return List.of("set");
-        if (args.length == 2) return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
-        if (args.length == 3) return rankNames();
+        if (args.length == 2 && args[0].equalsIgnoreCase("set")) return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        if (args.length == 3 && args[0].equalsIgnoreCase("set")) return rankNames();
         return List.of();
     }
 
@@ -94,13 +100,29 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     public void onResourcePackStatus(PlayerResourcePackStatusEvent event) {
         if (event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
             applyRank(event.getPlayer());
+            updateTabList(event.getPlayer());
         }
     }
 
     @EventHandler
-    public void onChat(AsyncPlayerChatEvent event) {
-        Rank rank = getRank(event.getPlayer());
-        event.setFormat("%1$s§8: §f%2$s");
+    public void onTeleport(PlayerTeleportEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                applyRank(player);
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onChat(AsyncChatEvent event) {
+        Component name = rankedName(event.getPlayer());
+        event.renderer(ChatRenderer.viewerUnaware((source, sourceDisplayName, message) ->
+            Component.empty()
+                .append(name)
+                .append(Component.text(": ").color(NamedTextColor.DARK_GRAY))
+                .append(message.colorIfAbsent(NamedTextColor.WHITE))
+        ));
     }
 
     public Rank getRank(Player player) {
@@ -108,21 +130,15 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     public void applyRank(Player player) {
-        Rank rank = getRank(player);
-        Component name = rankGlyph(rank) == null
-                ? LegacyComponentSerializer.legacySection().deserialize(
-                    prefix(rank) + " " + nameColor(rank) + player.getName()
-                ).font(Key.key("minecraft", "default"))
-                : Component.empty()
-                    .append(Component.text(rankGlyph(rank))
-                        .font(Key.key("aethermc", "ranks")))
-                    .append(Component.text(" ")
-                        .font(Key.key("minecraft", "default")))
-                    .append(LegacyComponentSerializer.legacySection().deserialize(
-                        nameColor(rank) + player.getName()
-                    ).font(Key.key("minecraft", "default")));
+        boolean canFly = getRank(player) != Rank.MEMBER;
+        player.setAllowFlight(canFly);
+        if (!canFly) {
+            player.setFlying(false);
+        }
+        Component name = rankedName(player);
         player.playerListName(name);
         player.displayName(name);
+        player.customName(name);
         updateTabList(player);
     }
 
@@ -132,27 +148,41 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
         }
     }
 
+    private Component rankedName(Player player) {
+        Rank rank = getRank(player);
+        Component name = Component.empty()
+            .append(LEGACY.deserialize(nameColor(rank) + player.getName()))
+            .decoration(TextDecoration.ITALIC, false);
+        if (rank == Rank.MEMBER) {
+            return name;
+        }
+        return Component.empty()
+            .append(rankPrefix(rank))
+            .append(Component.text(" "))
+            .append(name);
+    }
+
+    private Component rankPrefix(Rank rank) {
+        String glyph = rankGlyph(rank);
+        if (glyph != null) {
+            return Component.text(glyph).color(NamedTextColor.WHITE);
+        }
+        return LEGACY.deserialize(prefix(rank));
+    }
+
     private void updateTabList(Player player) {
         Component header = Component.empty()
-                .append(Component.text("\n\n\n")
-                    .font(Key.key("minecraft", "default")))
-                .append(Component.text("\uE238")
-                    .font(Key.key("aethermc", "logo")))
-                .append(Component.text("\n\n\n")
-                    .font(Key.key("minecraft", "default")))
-                .append(Component.text("\n")
-                    .font(Key.key("minecraft", "default")));
+            .append(Component.text("\n\n\n"))
+            .append(Component.text("\uE238").color(NamedTextColor.WHITE))
+            .append(Component.text("\n\n\n"));
 
         Component footer = Component.text("\nConnected to ")
-                .font(Key.key("minecraft", "default"))
-                .color(TextColor.fromHexString("#AAB7C4"))
+            .color(FOOTER_MUTED)
             .append(Component.text("AetherMC")
-                .font(Key.key("minecraft", "default"))
-                .color(TextColor.fromHexString("#55FFFF"))
+                .color(FOOTER_ACCENT)
                 .decorate(TextDecoration.BOLD))
             .append(Component.text("  |  " + Bukkit.getOnlinePlayers().size() + " online\n")
-                .font(Key.key("minecraft", "default"))
-                .color(TextColor.fromHexString("#AAB7C4")));
+                .color(FOOTER_MUTED));
 
         player.sendPlayerListHeaderAndFooter(header, footer);
     }
@@ -172,9 +202,6 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
     }
 
     private String prefix(Rank rank) {
-        String glyph = rankGlyph(rank);
-        if (glyph != null) return glyph;
-
         String configured = plugin.getConfig().getString("ranks." + rank.name() + ".prefix", rank.defaultPrefix());
         if (rank == Rank.MVP && configured.contains("AETHERLORD")) {
             configured = configured.replace("AETHERLORD", "CELESTIAL");
@@ -221,7 +248,7 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
 
     private void load() {
         if (!dataFile.exists()) return;
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
+        YamlConfiguration data = DataFileUtil.load(dataFile);
         for (String key : data.getKeys(false)) {
             try {
                 ranks.put(UUID.fromString(key), Rank.valueOf(data.getString(key, "MEMBER")));
@@ -236,7 +263,7 @@ public final class RankManager implements CommandExecutor, TabCompleter, Listene
         }
 
         try {
-            data.save(dataFile);
+            DataFileUtil.save(data, dataFile);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save ranks: " + e.getMessage());
         }

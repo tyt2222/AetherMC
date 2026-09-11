@@ -62,6 +62,10 @@ public class AdminResetCommand implements CommandExecutor {
         target.teleport(lobby.getSpawn());
         
         // 4. Reset Generators and Minions before clearing the island blocks.
+        Island currentIsland = islands.get(uuid).orElse(null);
+        if (currentIsland != null) {
+            generators.resetIsland(currentIsland);
+        }
         generators.resetPlayer(uuid);
         minions.resetPlayer(uuid);
 

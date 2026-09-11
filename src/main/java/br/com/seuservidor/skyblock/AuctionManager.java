@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public final class AuctionManager implements CommandExecutor, Listener {
+public final class AuctionManager implements CommandExecutor, TabCompleter, Listener {
     private static final String TITLE = "§8Player Market";
     private static final int PREV_SLOT = 45;
     private static final int ALL_SLOT = 47;
@@ -52,7 +53,14 @@ public final class AuctionManager implements CommandExecutor, Listener {
         this.dataFile = new File(plugin.getDataFolder(), "auctions.yml");
         load();
         plugin.getCommand("market").setExecutor(this);
+        plugin.getCommand("market").setTabCompleter(this);
         Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1) return "sell".startsWith(args[0].toLowerCase()) ? List.of("sell") : List.of();
+        return List.of();
     }
 
     @Override
@@ -264,7 +272,7 @@ public final class AuctionManager implements CommandExecutor, Listener {
 
     private void load() {
         if (!dataFile.exists()) return;
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
+        YamlConfiguration data = DataFileUtil.load(dataFile);
         nextId = data.getInt("next-id", 1);
         ConfigurationSection section = data.getConfigurationSection("listings");
         if (section == null) return;
@@ -299,7 +307,7 @@ public final class AuctionManager implements CommandExecutor, Listener {
         }
 
         try {
-            data.save(dataFile);
+            DataFileUtil.save(data, dataFile);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save auctions: " + e.getMessage());
         }

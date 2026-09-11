@@ -2,6 +2,7 @@ package br.com.seuservidor.skyblock;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.Biome;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -69,6 +70,7 @@ public final class IslandManager {
         }
         Island island = new Island(player.getUniqueId(), x * spacing, z * spacing);
         byOwner.put(player.getUniqueId(), island);
+        clearIsland(island);
         buildStarterIsland(island);
         save();
         return island;
@@ -102,7 +104,12 @@ public final class IslandManager {
                 for (int y = world.getMinHeight(); y < world.getMaxHeight(); y++) {
                     world.getBlockAt(x, y, z).setType(Material.AIR, false);
                 }
+                world.setBiome(x, z, Biome.PLAINS);
             }
+            world.getEntities().stream()
+                .filter(entity -> island.contains(entity.getLocation(), radius))
+                .filter(entity -> !(entity instanceof Player))
+                .forEach(entity -> entity.remove());
         }
     }
 
@@ -111,6 +118,7 @@ public final class IslandManager {
         // 10x10 grass square, without tree and without chest
         for (int x = -5; x < 5; x++) {
             for (int z = -5; z < 5; z++) {
+                world.setBiome(island.centerX() + x, island.centerZ() + z, Biome.PLAINS);
                 world.getBlockAt(island.centerX() + x, y, island.centerZ() + z).setType(Material.GRASS_BLOCK, false);
                 world.getBlockAt(island.centerX() + x, y - 1, island.centerZ() + z).setType(Material.DIRT, false);
                 world.getBlockAt(island.centerX() + x, y - 2, island.centerZ() + z).setType(Material.DIRT, false);
@@ -118,19 +126,43 @@ public final class IslandManager {
         }
     }
 
-    public Location home(Island island) { return new Location(world, island.centerX() + .5, 102, island.centerZ() + .5); }
+    public Location home(Island island) {
+        int minX = island.centerX() - 5;
+        int maxX = island.centerX() + 5;
+        int minZ = island.centerZ() - 5;
+        int maxZ = island.centerZ() + 5;
+        for (int y = world.getMaxHeight() - 2; y >= world.getMinHeight(); y--) {
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    Block floor = world.getBlockAt(x, y, z);
+                    if (floor.getType().isSolid()
+                        && world.getBlockAt(x, y + 1, z).isEmpty()
+                        && world.getBlockAt(x, y + 2, z).isEmpty()) {
+                        return new Location(world, x + .5, y + 1, z + .5);
+                    }
+                }
+            }
+        }
+        return new Location(world, island.centerX() + .5, 102, island.centerZ() + .5);
+    }
 
     private void load() {
         if (!dataFile.exists()) return;
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
+        YamlConfiguration data = DataFileUtil.load(dataFile);
         nextIsland = data.getInt("next-island", 0);
         for (String id : data.getConfigurationSection("islands") == null ? Set.<String>of() : data.getConfigurationSection("islands").getKeys(false)) {
             UUID owner = UUID.fromString(id);
             Island island = new Island(owner, data.getInt("islands." + id + ".x"), data.getInt("islands." + id + ".z"));
+            island.setOpen(data.getBoolean("islands." + id + ".open", true));
             for (String member : data.getStringList("islands." + id + ".members")) {
                 try { island.addMember(UUID.fromString(member)); } catch (IllegalArgumentException ignored) { }
             }
             byOwner.put(owner, island);
+            for (int x = island.centerX() - radius; x <= island.centerX() + radius; x++) {
+                for (int z = island.centerZ() - radius; z <= island.centerZ() + radius; z++) {
+                    world.setBiome(x, z, Biome.PLAINS);
+                }
+            }
         }
     }
     public void save() {
@@ -138,9 +170,10 @@ public final class IslandManager {
         byOwner.forEach((id, island) -> {
             data.set("islands." + id + ".x", island.centerX());
             data.set("islands." + id + ".z", island.centerZ());
+            data.set("islands." + id + ".open", island.isOpen());
             data.set("islands." + id + ".members", island.members().stream().map(UUID::toString).toList());
         });
-        try { data.save(dataFile); } catch (IOException e) { plugin.getLogger().severe("Falha ao salvar ilhas: " + e.getMessage()); }
+        try { DataFileUtil.save(data, dataFile); } catch (IOException e) { plugin.getLogger().severe("Falha ao salvar ilhas: " + e.getMessage()); }
     }
 
     public boolean invite(UUID owner, UUID member) {
@@ -161,5 +194,20 @@ public final class IslandManager {
 
     public Optional<Island> getCoopIsland(UUID player) {
         return byOwner.values().stream().filter(island -> island.members().contains(player)).findFirst();
+    }
+
+    public Optional<Island> findByName(String name) {
+        return byOwner.values().stream()
+            .filter(island -> Bukkit.getOfflinePlayer(island.owner()).getName() != null)
+            .filter(island -> Bukkit.getOfflinePlayer(island.owner()).getName().equalsIgnoreCase(name))
+            .findFirst();
+    }
+
+    public boolean setOpen(UUID owner, boolean open) {
+        Island island = byOwner.get(owner);
+        if (island == null) return false;
+        island.setOpen(open);
+        save();
+        return true;
     }
 }

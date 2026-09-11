@@ -10,6 +10,7 @@ public final class Island {
     private final UUID owner;
     private final int centerX;
     private final int centerZ;
+    private boolean open = true;
     private final Set<UUID> members = new HashSet<>();
 
     public Island(UUID owner, int centerX, int centerZ) {
@@ -23,6 +24,8 @@ public final class Island {
     public int centerZ() { return centerZ; }
     public Set<UUID> members() { return Collections.unmodifiableSet(members); }
     public boolean hasMember(UUID uuid) { return owner.equals(uuid) || members.contains(uuid); }
+    public boolean isOpen() { return open; }
+    public void setOpen(boolean open) { this.open = open; }
     public void addMember(UUID uuid) { if (!owner.equals(uuid)) members.add(uuid); }
     public void removeMember(UUID uuid) { members.remove(uuid); }
 

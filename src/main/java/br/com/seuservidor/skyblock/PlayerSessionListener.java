@@ -60,7 +60,7 @@ public final class PlayerSessionListener implements Listener {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         if (manager != null) {
             Scoreboard board = manager.getNewScoreboard();
-            Objective obj = board.registerNewObjective("skyblock", "dummy", net.kyori.adventure.text.Component.text("§b§lAETHER"));
+            Objective obj = board.registerNewObjective("skyblock", "dummy", net.kyori.adventure.text.Component.text("§b§lAETHERMC"));
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
             
             try { obj.numberFormat(NumberFormat.blank()); } catch (Throwable ignored) { }
@@ -75,17 +75,18 @@ public final class PlayerSessionListener implements Listener {
             int playerLevel = 1;
             
             obj.getScore("§f\u00A0§r").setScore(12);
-            obj.getScore("§1§b§lꜱᴛᴀᴛɪꜱᴛɪᴄꜱ").setScore(11);
-            obj.getScore("§1§8 ").setScore(10);
-            obj.getScore("§2§7ʙᴀʟᴀɴᴄᴇ §f$" + formatValue(balance)).setScore(9);
-            obj.getScore("§3§7ᴍᴏɴᴇʏ/ʜ §a$" + formatValue(moneyPerHour)).setScore(8);
-            obj.getScore("§4§8 ").setScore(7);
-            obj.getScore("§5§d§lᴘʟᴀʏᴇʀ").setScore(6);
-            obj.getScore("§f\u00A0").setScore(5);
-            obj.getScore("§7§7ʟᴇᴠᴇʟ §f" + playerLevel).setScore(4);
-            obj.getScore("§8§7ɢᴇɴᴇʀᴀᴛᴏʀꜱ §f" + generators.getCount(islandOwner) + "/" + maxGens).setScore(3);
-            obj.getScore("§9§7ᴡᴏʀᴋᴇʀꜱ §f" + workers + "/" + maxWorkers).setScore(2);
-            obj.getScore("§b§8 ").setScore(0);
+            obj.getScore("§1§b§l✦ ᴇᴄᴏɴᴏᴍʏ").setScore(11);
+            obj.getScore("§2§8 ").setScore(10);
+            obj.getScore("§3§7Balance §f$" + formatValue(balance)).setScore(9);
+            obj.getScore("§4§7Income §a$" + formatValue(moneyPerHour) + "§7/h").setScore(8);
+            obj.getScore("§5§8 ").setScore(7);
+            obj.getScore("§6§d§l✦ ɪꜱʟᴀɴᴅ").setScore(6);
+            obj.getScore("§7§8 ").setScore(5);
+            obj.getScore("§8§7Level §f" + playerLevel).setScore(4);
+            obj.getScore("§9§7Generators §f" + generators.getCount(islandOwner) + "§8/§f" + maxGens).setScore(3);
+            obj.getScore("§a§7Workers §f" + workers + "§8/§f" + maxWorkers).setScore(2);
+            obj.getScore("§b§8 ").setScore(1);
+            obj.getScore("§c§7ᴘʟᴀʏ.ᴀᴇᴛʜᴇʀᴍᴄ.ᴄᴏᴍ").setScore(0);
             
             player.setScoreboard(board);
         }

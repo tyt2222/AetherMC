@@ -52,6 +52,10 @@ public final class GeneratorManager implements Listener {
         return countsByOwner.getOrDefault(owner, 0);
     }
 
+    public boolean isGenerator(Block block) {
+        return placed.containsKey(block.getLocation());
+    }
+
     public long getMoneyPerHour(UUID owner) {
         long total = 0;
         for (PlacedGenerator generator : placed.values()) {
@@ -72,13 +76,13 @@ public final class GeneratorManager implements Listener {
         
         PlacedGenerator generator = placed.get(block.getLocation());
         if (generator != null) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && itemType(event.getItem()) != null) return;
+            event.setCancelled(true);
             if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
                 if (!islands.isMember(player.getUniqueId(), generator.owner())) {
-                    event.setCancelled(true);
                     player.sendMessage("§cOnly coop members can remove this generator.");
                     return;
                 }
-                event.setCancelled(true);
                 ItemStack genItem = removeGenerator(block);
                 if (genItem != null) {
                     block.setType(Material.AIR);
@@ -91,34 +95,28 @@ public final class GeneratorManager implements Listener {
         }
     }
     
-    @EventHandler
-    public void onPickup(org.bukkit.event.entity.EntityPickupItemEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
-        ItemStack item = event.getItem().getItemStack();
-        if (item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(moneyKey, PersistentDataType.INTEGER)) {
-            Integer amt = item.getItemMeta().getPersistentDataContainer().get(amountKey, PersistentDataType.INTEGER);
-            if (amt != null && amt > 1) { 
-                event.setCancelled(true);
-                event.getItem().remove();
-                
-                int val = item.getItemMeta().getPersistentDataContainer().get(moneyKey, PersistentDataType.INTEGER);
-                int remaining = amt;
-                while (remaining > 0) {
-                    int chunk = Math.min(64, remaining);
-                    ItemStack stack = createMoney(val, 1);
-                    stack.setAmount(chunk);
-                    player.getInventory().addItem(stack);
-                    remaining -= chunk;
-                }
-                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.2f, 2.0f);
-            }
-        }
-    }
-
     public void resetPlayer(UUID owner) {
         placed.entrySet().removeIf(entry -> entry.getValue().owner().equals(owner));
         countsByOwner.remove(owner);
         save();
+    }
+
+    public void resetIsland(Island island) {
+        placed.entrySet().removeIf(entry -> entry.getKey().getWorld().equals(islandWorld())
+            && island.contains(entry.getKey(), islands.radius()));
+        rebuildCounts();
+        save();
+    }
+
+    private World islandWorld() {
+        return Bukkit.getWorld("skyblock");
+    }
+
+    private void rebuildCounts() {
+        countsByOwner.clear();
+        for (PlacedGenerator generator : placed.values()) {
+            countsByOwner.merge(generator.owner(), 1, Integer::sum);
+        }
     }
     
     @EventHandler
@@ -146,36 +144,45 @@ public final class GeneratorManager implements Listener {
     }
     
     public Set<String> typeIds() { return Collections.unmodifiableSet(types.keySet()); }
+
+    public int tier(String id) {
+        int tier = 1;
+        for (String typeId : types.keySet()) {
+            if (typeId.equals(id)) return tier;
+            tier++;
+        }
+        return 0;
+    }
     
     public ItemStack createItem(String id) {
         GeneratorType type = types.get(id); if (type == null) return null;
         ItemStack item = new ItemStack(type.blockType()); ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(org.bukkit.ChatColor.translateAlternateColorCodes('&', type.name()));
         
-        int tier = new java.util.ArrayList<>(types.keySet()).indexOf(id) + 1;
+        int tier = tier(id);
         
         meta.setLore(List.of(
             "§8[Tier " + tier + "]",
             "§7Place on your island",
-            "§7Produces: §a" + type.noteAmount() + "x §2$§a" + type.noteValue() + " §7every §f" + type.intervalSeconds() + "s"
+            "§7Produces: §a" + type.noteAmount() + "x §2$§a" + PlayerSessionListener.formatValue(type.noteValue()) + " §7every §f" + type.intervalSeconds() + "s"
         ));
         
         meta.getPersistentDataContainer().set(generatorKey, PersistentDataType.STRING, id); item.setItemMeta(meta); return item;
     }
     
-    public ItemStack createMoney(int value, int amount) {
+    public ItemStack createMoney(int value, long amount) {
         Material mat = Material.PAPER;
         String name = "Bill";
-        if (value >= 10000) { mat = Material.CHEST; name = "Briefcase"; }
+        if (value >= 10000) { mat = Material.IRON_BLOCK; name = "Briefcase"; }
         else if (value >= 1000) { mat = Material.NAME_TAG; name = "Credit Card"; }
         else if (value > 100) { mat = Material.GOLD_INGOT; name = "Gold Bar"; }
         
-        ItemStack money = new ItemStack(mat, Math.max(1, amount));
+        ItemStack money = new ItemStack(mat);
         ItemMeta meta = money.getItemMeta();
-        meta.setDisplayName("§2$§a" + value + " §a" + name);
+        meta.setDisplayName("§2$§a" + PlayerSessionListener.formatValue(value) + " §a" + name);
         meta.setLore(List.of("§7Right-click to deposit!"));
         meta.getPersistentDataContainer().set(moneyKey, PersistentDataType.INTEGER, value);
-        meta.getPersistentDataContainer().set(amountKey, PersistentDataType.INTEGER, 1);
+        meta.getPersistentDataContainer().set(amountKey, PersistentDataType.LONG, Math.max(1L, amount));
         money.setItemMeta(meta);
         return money;
     }
@@ -205,9 +212,10 @@ public final class GeneratorManager implements Listener {
         return false;
     }
     
-    public ItemStack removeGenerator(Block block) {
+    public synchronized ItemStack removeGenerator(Block block) {
         PlacedGenerator generator = placed.remove(block.getLocation());
         if (generator == null) return null;
+        block.setType(Material.AIR, false);
         countsByOwner.merge(generator.owner(), -1, Integer::sum);
         save();
         return createItem(generator.type());
@@ -220,6 +228,7 @@ public final class GeneratorManager implements Listener {
     private void tick() {
         long now = System.currentTimeMillis();
         boolean needsSave = false;
+        List<OutputProduction> productions = new ArrayList<>();
         
         Set<UUID> activeIslands = new HashSet<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -235,11 +244,14 @@ public final class GeneratorManager implements Listener {
             PlacedGenerator generator = entry.getValue(); 
             GeneratorType type = types.get(generator.type());
             
-            if (type == null || block.getType() != type.blockType()) {
+            if (type == null) {
                 it.remove();
                 countsByOwner.merge(generator.owner(), -1, Integer::sum);
                 needsSave = true;
                 continue;
+            }
+            if (block.getType() != type.blockType()) {
+                block.setType(type.blockType(), false);
             }
             if (!activeIslands.contains(generator.owner())) continue;
             
@@ -264,74 +276,128 @@ public final class GeneratorManager implements Listener {
             
             Island island = islands.get(generator.owner()).orElse(null);
             if (island == null) continue;
-            long islandItems = output.getWorld().getEntitiesByClass(Item.class).stream()
-                .filter(item -> island.contains(item.getLocation(), islands.radius())).count();
-            long islandEntities = output.getWorld().getEntities().stream()
-                .filter(entity -> island.contains(entity.getLocation(), islands.radius())).count();
-            if (islandItems >= maxItemsPerIsland || islandEntities >= maxEntitiesPerIsland) {
-                continue;
-            }
-            Collection<org.bukkit.entity.Entity> nearby = output.getWorld().getNearbyEntities(output.getLocation().add(0.5, 0.2, 0.5), 1.5, 1.5, 1.5, e -> e instanceof Item);
-            boolean merged = false;
-            for (org.bukkit.entity.Entity e : nearby) {
-                Item itemEntity = (Item) e;
-                ItemStack stack = itemEntity.getItemStack();
-                if (stack.hasItemMeta()) {
-                    Integer val = stack.getItemMeta().getPersistentDataContainer().get(moneyKey, PersistentDataType.INTEGER);
-                    if (val != null && val == type.noteValue()) {
-                        Integer amt = stack.getItemMeta().getPersistentDataContainer().get(amountKey, PersistentDataType.INTEGER);
-                        if (amt == null) amt = stack.getAmount();
-                        
-                        int total = amt + type.noteAmount(); 
-                        ItemStack newStack = createMoney(val, total);
-                        itemEntity.setItemStack(newStack);
-                        itemEntity.setCustomName("§2$§a" + val + " §8(x" + total + ")");
-                        merged = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (!merged) {
-                ItemStack money = createMoney(type.noteValue(), type.noteAmount());
-                Item entity = output.getWorld().dropItem(output.getLocation().add(0.5, 0.2, 0.5), money);
-                entity.setCustomName("§2$§a" + type.noteValue() + " §8(x" + type.noteAmount() + ")");
-                entity.setCustomNameVisible(true);
-                entity.setVelocity(new org.bukkit.util.Vector(0, 0.1, 0));
-            }
-            
+            // Only consume output at this generator's own cell. A wide search lets
+            // adjacent generators process the same entity during one production cycle.
+            productions.add(new OutputProduction(output.getLocation(), type.noteValue(),
+                type.noteAmount(), generator.owner()));
             entry.setValue(generator.withLastProduced(now));
         }
+        processProductions(productions);
         if (needsSave) save();
+    }
+
+    private void processProductions(List<OutputProduction> productions) {
+        List<List<OutputProduction>> groups = new ArrayList<>();
+        for (OutputProduction production : productions) {
+            List<OutputProduction> group = null;
+            for (List<OutputProduction> candidate : groups) {
+                if (candidate.stream().anyMatch(existing -> sameProductionArea(existing, production))) {
+                    group = candidate;
+                    break;
+                }
+            }
+            if (group == null) {
+                group = new ArrayList<>();
+                groups.add(group);
+            }
+            group.add(production);
+        }
+
+        for (List<OutputProduction> group : groups) {
+            OutputProduction first = group.get(0);
+            int total = group.stream().mapToInt(OutputProduction::amount).sum();
+            Item matching = null;
+            Set<UUID> seen = new HashSet<>();
+            List<Item> nearbyItems = new ArrayList<>();
+
+            for (OutputProduction production : group) {
+                Collection<org.bukkit.entity.Entity> nearby = production.location().getWorld().getNearbyEntities(
+                    production.location().add(0.5, 0.2, 0.5), 1.5, 1.5, 1.5, e -> e instanceof Item);
+                for (org.bukkit.entity.Entity entity : nearby) {
+                    if (!(entity instanceof Item item) || !seen.add(item.getUniqueId())) continue;
+                    ItemStack stack = item.getItemStack();
+                    if (!stack.hasItemMeta()) continue;
+                    Integer value = stack.getItemMeta().getPersistentDataContainer().get(moneyKey, PersistentDataType.INTEGER);
+                    if (value == null || value != first.value()) continue;
+                    Integer amount = stack.getItemMeta().getPersistentDataContainer().get(amountKey, PersistentDataType.INTEGER);
+                    total += amount != null ? amount : stack.getAmount();
+                    nearbyItems.add(item);
+                }
+            }
+
+            if (!nearbyItems.isEmpty()) {
+                matching = nearbyItems.get(0);
+                matching.teleport(centerOf(first.location()));
+                matching.setItemStack(createMoney(first.value(), total));
+                matching.setCustomName("§2$§a" + first.value() + " §8(x" + total + ")");
+                matching.setCustomNameVisible(true);
+                for (int i = 1; i < nearbyItems.size(); i++) nearbyItems.get(i).remove();
+                continue;
+            }
+
+            Island island = islands.get(first.owner()).orElse(null);
+            if (island == null) continue;
+            long islandItems = first.location().getWorld().getEntitiesByClass(Item.class).stream()
+                .filter(item -> island.contains(item.getLocation(), islands.radius())).count();
+            long islandEntities = first.location().getWorld().getEntities().stream()
+                .filter(entity -> island.contains(entity.getLocation(), islands.radius())).count();
+            if (islandItems >= maxItemsPerIsland || islandEntities >= maxEntitiesPerIsland) continue;
+
+            Location spawnLocation = centerOf(first.location());
+            Item entity = first.location().getWorld().dropItem(spawnLocation, createMoney(first.value(), total));
+            entity.teleport(spawnLocation);
+            entity.setCustomName("§2$§a" + first.value() + " §8(x" + total + ")");
+            entity.setCustomNameVisible(true);
+            entity.setVelocity(new org.bukkit.util.Vector(0, 0.1, 0));
+        }
+    }
+
+    private boolean sameProductionArea(OutputProduction first, OutputProduction second) {
+        return first.value() == second.value()
+            && first.owner().equals(second.owner())
+            && first.location().getWorld().equals(second.location().getWorld())
+            && first.location().distanceSquared(second.location()) <= 9.0;
+    }
+
+    private Location centerOf(Location location) {
+        return new Location(location.getWorld(), location.getBlockX() + 0.5,
+            location.getBlockY() + 0.5, location.getBlockZ() + 0.5);
     }
     
     private void load() {
         if (!dataFile.exists()) return; 
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(dataFile); 
+        YamlConfiguration data = DataFileUtil.load(dataFile);
         ConfigurationSection section = data.getConfigurationSection("placed"); if (section == null) return;
         for (String key : section.getKeys(false)) { 
             String path = "placed." + key + "."; 
             World world = Bukkit.getWorld(data.getString(path + "world", "skyblock")); if (world == null) continue;
-            try { 
-                placed.put(new Location(world, data.getInt(path + "x"), data.getInt(path + "y"), data.getInt(path + "z")), 
-                    new PlacedGenerator(data.getString(path + "type"), UUID.fromString(data.getString(path + "owner")), data.getLong(path + "last")));
+            try {
+                Location location = new Location(world, data.getInt(path + "x"), data.getInt(path + "y"), data.getInt(path + "z"));
+                String typeId = data.getString(path + "type");
+                GeneratorType type = types.get(typeId);
+                if (type == null) continue;
+                location.getBlock().setType(type.blockType(), false);
+                placed.put(location,
+                    new PlacedGenerator(typeId, UUID.fromString(data.getString(path + "owner")), data.getLong(path + "last")));
                 countsByOwner.merge(UUID.fromString(data.getString(path + "owner")), 1, Integer::sum);
             } catch (IllegalArgumentException ignored) { }
         }
     }
     
-    public void save() { 
+    public synchronized void save() { 
         YamlConfiguration data = new YamlConfiguration(); int i = 0; 
         for (Map.Entry<Location, PlacedGenerator> entry : placed.entrySet()) { 
             String p = "placed." + i++ + "."; Location l = entry.getKey(); PlacedGenerator g = entry.getValue(); 
             data.set(p + "world", l.getWorld().getName()); data.set(p + "x", l.getBlockX()); data.set(p + "y", l.getBlockY()); data.set(p + "z", l.getBlockZ()); 
             data.set(p + "type", g.type()); data.set(p + "owner", g.owner().toString()); data.set(p + "last", g.lastProduced());
         } 
-        try { data.save(dataFile); } catch (IOException e) { plugin.getLogger().warning("Falha ao salvar geradores: " + e.getMessage()); } 
+        try { DataFileUtil.save(data, dataFile); } catch (IOException e) { plugin.getLogger().warning("Falha ao salvar geradores: " + e.getMessage()); }
     }
     
     public GeneratorType getType(String id) { return types.get(id); }
+    public SkyblockPlugin getPlugin() { return plugin; }
     public record GeneratorType(String id, String name, long intervalSeconds, int noteValue, int noteAmount, Material blockType) { }
+    private record OutputProduction(Location location, int value, int amount, UUID owner) { }
     private record PlacedGenerator(String type, UUID owner, long lastProduced) { 
         PlacedGenerator withLastProduced(long value) { return new PlacedGenerator(type, owner, value); } 
     }

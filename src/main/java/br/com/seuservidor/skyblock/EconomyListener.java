@@ -43,9 +43,9 @@ public class EconomyListener implements Listener {
                     if (item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(generators.moneyKey, PersistentDataType.INTEGER)) {
                         Integer itemValue = item.getItemMeta().getPersistentDataContainer().get(generators.moneyKey, PersistentDataType.INTEGER);
                         if (itemValue != null) {
-                            Integer baseAmt = item.getItemMeta().getPersistentDataContainer().get(generators.amountKey, PersistentDataType.INTEGER);
-                            if (baseAmt == null) baseAmt = 1;
-                            totalAdded += itemValue * baseAmt * item.getAmount();
+                            Long baseAmt = item.getItemMeta().getPersistentDataContainer().get(generators.amountKey, PersistentDataType.LONG);
+                            if (baseAmt == null) baseAmt = (long) item.getAmount();
+                            totalAdded += (long) itemValue * baseAmt;
                             player.getInventory().setItem(i, null);
                         }
                     }

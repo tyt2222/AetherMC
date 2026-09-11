@@ -40,11 +40,13 @@ public class MilestoneManager implements Listener {
         if (!dataFile.exists()) {
             try { dataFile.createNewFile(); } catch (IOException ignored) {}
         }
-        data = YamlConfiguration.loadConfiguration(dataFile);
+        data = DataFileUtil.load(dataFile);
     }
 
     private void save() {
-        try { data.save(dataFile); dirty = false; } catch (IOException ignored) {}
+        try { DataFileUtil.save(data, dataFile); dirty = false; } catch (IOException e) {
+            plugin.getLogger().warning("Falha ao salvar milestones: " + e.getMessage());
+        }
     }
 
     public void addMoneyGenerated(UUID uuid, long amount) {
@@ -70,21 +72,21 @@ public class MilestoneManager implements Listener {
 
     public int getMoneyLevel(UUID uuid) {
         long money = data.getLong(uuid.toString() + ".money", 0);
-        if (money >= 1_000_000_000L) return 5;
-        if (money >= 100_000_000L) return 4;
-        if (money >= 10_000_000L) return 3;
-        if (money >= 1_000_000L) return 2;
+        if (money >= 50_000_000L) return 5;
+        if (money >= 10_000_000L) return 4;
+        if (money >= 2_000_000L) return 3;
+        if (money >= 500_000L) return 2;
         if (money >= 100_000L) return 1;
         return 0;
     }
 
     public int getWorkerLevel(UUID uuid) {
         long items = data.getLong(uuid.toString() + ".worker_items", 0);
-        if (items >= 100_000L) return 5;
-        if (items >= 50_000L) return 4;
-        if (items >= 10_000L) return 3;
-        if (items >= 1_000L) return 2;
-        if (items >= 100L) return 1;
+        if (items >= 10_000L) return 5;
+        if (items >= 2_500L) return 4;
+        if (items >= 500L) return 3;
+        if (items >= 100L) return 2;
+        if (items >= 25L) return 1;
         return 0;
     }
 
@@ -128,7 +130,7 @@ public class MilestoneManager implements Listener {
 
     private long nextMoneyNeeded(UUID uuid) {
         long money = data.getLong(uuid.toString() + ".money", 0);
-        long[] thresholds = {100_000L, 1_000_000L, 10_000_000L, 100_000_000L, 1_000_000_000L};
+        long[] thresholds = {100_000L, 500_000L, 2_000_000L, 10_000_000L, 50_000_000L};
         for (long threshold : thresholds) {
             if (money < threshold) return threshold - money;
         }
@@ -137,7 +139,7 @@ public class MilestoneManager implements Listener {
 
     private long nextWorkerNeeded(UUID uuid) {
         long items = data.getLong(uuid.toString() + ".worker_items", 0);
-        long[] thresholds = {100L, 1_000L, 10_000L, 50_000L, 100_000L};
+        long[] thresholds = {25L, 100L, 500L, 2_500L, 10_000L};
         for (long threshold : thresholds) {
             if (items < threshold) return threshold - items;
         }
